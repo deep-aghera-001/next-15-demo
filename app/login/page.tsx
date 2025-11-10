@@ -1,5 +1,5 @@
 import ServerAuthRedirect from '@/components/ServerAuthRedirect'
-import LoginForm from './LoginForm'
+import LoginForm from '@/components/forms/LoginForm'
 
 export default function LoginPage() {
   return (

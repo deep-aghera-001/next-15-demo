@@ -1,5 +1,5 @@
 import ServerAuthRedirect from '@/components/ServerAuthRedirect'
-import ResetPasswordForm from './ResetPasswordForm'
+import ResetPasswordForm from '@/components/forms/ResetPasswordForm'
 
 export default function ResetPasswordPage() {
   return (
