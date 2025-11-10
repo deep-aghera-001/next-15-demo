@@ -1,4 +1,4 @@
-import AuthGuard from '@/components/AuthGuard'
+import ServerAuthGuard from '@/components/ServerAuthGuard'
 
 export default function DashboardLayout({
   children,
@@ -6,8 +6,8 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <AuthGuard redirectTo="/login">
+    <ServerAuthGuard redirectTo="/login">
       {children}
-    </AuthGuard>
+    </ServerAuthGuard>
   )
 }

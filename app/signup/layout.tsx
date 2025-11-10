@@ -1,4 +1,4 @@
-import AuthRedirect from '@/components/AuthRedirect'
+import ServerAuthRedirect from '@/components/ServerAuthRedirect'
 
 export default function AuthLayout({
   children,
@@ -6,8 +6,8 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <AuthRedirect>
+    <ServerAuthRedirect redirectTo="/dashboard">
       {children}
-    </AuthRedirect>
+    </ServerAuthRedirect>
   )
 }
