@@ -19,15 +19,16 @@ export async function signup(prevState: FormState, formData: FormData) {
     password: formData.get('password') as string,
   }
 
+  // Attempt to sign up the user
   const { error, data: signUpData } = await supabase.auth.signUp(data)
 
   if (error) {
     return { error: error.message }
   }
 
-  // Check if email confirmation is required
-  if (signUpData.user && !signUpData.user.identities) {
-    // User already exists, but email might need confirmation
+  // Check the signUpData to determine what happened
+  if (signUpData.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
+    // User already exists (no new identity was created)
     return { 
       success: false, 
       error: 'Account already exists. Please check your email for confirmation.' 
