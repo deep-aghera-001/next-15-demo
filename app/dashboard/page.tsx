@@ -1,0 +1,45 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
+
+export default async function DashboardPage() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.auth.getUser()
+  if (error || !data?.user) {
+    redirect('/login')
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <div className="bg-white shadow">
+        <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+              <p className="mt-2 text-gray-600">Welcome, {data.user.email}!</p>
+            </div>
+            <form action="/logout" method="post">
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Logout
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div className="py-6">
+        <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
+          <div className="py-4">
+            <div className="border-4 border-dashed rounded-lg h-96 border-gray-200">
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-500">Your dashboard content goes here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
