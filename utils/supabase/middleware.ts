@@ -28,7 +28,16 @@ export async function updateSession(request: NextRequest) {
   )
 
   // Refresh session if expired - required for Server Components
-  await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  // Protect auth pages from authenticated users
+  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
+                     request.nextUrl.pathname.startsWith('/signup')
+  
+  if (isAuthPage && session) {
+    // Redirect authenticated users away from auth pages
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
 
   return response
 }

@@ -27,19 +27,19 @@ export default async function DashboardPage() {
               </button>
             </form>
           </div>
+          </div>
         </div>
-      </div>
-      <div className="py-6">
-        <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
-          <div className="py-4">
-            <div className="border-4 border-dashed rounded-lg h-96 border-gray-200">
-              <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500">Your dashboard content goes here</p>
+        <div className="py-6">
+          <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
+            <div className="py-4">
+              <div className="border-4 border-dashed rounded-lg h-96 border-gray-200">
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500">Your dashboard content goes here</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   )
 }
