@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { signUpWithOAuth } from '@/utils/supabase/oauth'
 
 type FormState = {
   error?: string
@@ -40,4 +41,13 @@ export async function signup(prevState: FormState, formData: FormData) {
   }
 
   return { success: true }
+}
+
+// OAuth actions for GitHub and Google
+export async function signUpWithGitHub() {
+  return await signUpWithOAuth('github')
+}
+
+export async function signUpWithGoogle() {
+  return await signUpWithOAuth('google')
 }

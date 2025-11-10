@@ -34,7 +34,10 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
                      request.nextUrl.pathname.startsWith('/signup')
   
-  if (isAuthPage && session) {
+  // Skip protection for auth callback
+  const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback')
+  
+  if (isAuthPage && session && !isAuthCallback) {
     // Redirect authenticated users away from auth pages
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
