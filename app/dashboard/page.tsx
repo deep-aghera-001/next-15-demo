@@ -1,4 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
+import UserProfileManager from '@/components/UserProfileManager'
+import ProtectedDataDisplay from '@/components/ProtectedDataDisplay'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -31,12 +33,9 @@ export default async function DashboardPage() {
       </div>
       <div className="py-6">
         <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
-          <div className="py-4">
-            <div className="border-4 border-dashed rounded-lg h-96 border-gray-200">
-              <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500">Your dashboard content goes here</p>
-              </div>
-            </div>
+          <div className="py-4 space-y-6">
+            <UserProfileManager />
+            <ProtectedDataDisplay />
           </div>
         </div>
       </div>

@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:api": "echo 'Use curl or Postman to test API routes'"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
