@@ -159,6 +159,12 @@ export default function LoginForm() {
             </Link>
           </p>
         </div>
+        
+        <div className="text-center mt-4">
+          <Link href="/reset-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+            Forgot your password?
+          </Link>
+        </div>
       </div>
     </div>
   )
