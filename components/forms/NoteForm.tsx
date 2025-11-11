@@ -3,7 +3,19 @@
 import { useTransition, useState } from 'react'
 import { createNote } from '@/utils/notes-api-client'
 
-export default function NoteForm({ onNoteAdded }: { onNoteAdded?: (newNote: any) => void }) {
+interface Note {
+  id: string | number;
+  note: string;
+  created_at: string;
+  user?: {
+    email: string;
+  };
+  tempId?: string;
+  error?: boolean;
+  [key: string]: any;
+}
+
+export default function NoteForm({ onNoteAdded }: { onNoteAdded?: (newNote: Note) => void }) {
   const [pending, start] = useTransition()
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -16,7 +28,7 @@ export default function NoteForm({ onNoteAdded }: { onNoteAdded?: (newNote: any)
     
     // Create optimistic note with a unique temporary ID
     const tempId = `optimistic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    const optimisticNote = {
+    const optimisticNote: Note = {
       id: tempId,
       note: note.trim(),
       created_at: new Date().toISOString(),
@@ -40,7 +52,7 @@ export default function NoteForm({ onNoteAdded }: { onNoteAdded?: (newNote: any)
       setError(error.message || 'Failed to create note. Please try again.')
       // Notify parent to remove the optimistic note on error
       if (onNoteAdded) {
-        onNoteAdded({ id: tempId, error: true })
+        onNoteAdded({ id: tempId, error: true } as Note)
       }
     }
   }

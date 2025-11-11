@@ -8,20 +8,28 @@ import NoteAccessManager from '@/components/forms/NoteAccessManager'
 
 export interface NotesListHandle {
   refreshNotes: () => void;
-  addOptimisticNote: (note: any) => void;
-  updateNoteOptimistically: (id: number, updatedNote: any) => void;
-  removeNoteOptimistically: (id: string) => void;
+  // Removed the optimistic update methods since we're now using useOptimistic hook
+}
+
+interface Note {
+  id: string | number;
+  note: string;
+  created_at: string;
+  user?: {
+    email: string;
+  };
+  [key: string]: any;
 }
 
 interface NotesListProps {
-  notes?: any[];
+  notes?: Note[];
   onNoteDeleted?: () => void;
   onNoteUpdated?: () => void;
   currentUserId?: string;
 }
 
 const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNotes, onNoteDeleted, onNoteUpdated, currentUserId }, ref) => {
-  const [notes, setNotes] = useState<any[]>(propNotes || [])
+  const [notes, setNotes] = useState<Note[]>(propNotes || [])
   const [loading, setLoading] = useState(!propNotes)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -52,35 +60,8 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
   }, [propNotes])
 
   useImperativeHandle(ref, () => ({
-    refreshNotes: fetchNotes,
-    addOptimisticNote: (newNote) => {
-      // If this is a replacement for an optimistic note, replace it
-      if (newNote.tempId) {
-        setNotes(prevNotes => 
-          prevNotes.map(note => 
-            note.id === newNote.tempId ? { ...newNote, id: newNote.id } : note
-          )
-        )
-      } 
-      // If this is to remove an optimistic note due to error
-      else if (newNote.error) {
-        setNotes(prevNotes => prevNotes.filter(note => note.id !== newNote.id))
-      }
-      // Otherwise, add the new note to the beginning of the list
-      else {
-        setNotes(prevNotes => [newNote, ...prevNotes])
-      }
-    },
-    updateNoteOptimistically: (id, updatedNote) => {
-      setNotes(prevNotes => 
-        prevNotes.map(note => 
-          note.id === id ? { ...note, ...updatedNote } : note
-        )
-      )
-    },
-    removeNoteOptimistically: (id) => {
-      setNotes(prevNotes => prevNotes.filter(note => note.id !== id))
-    }
+    refreshNotes: fetchNotes
+    // Removed the optimistic update methods since we're now using useOptimistic hook
   }))
 
   const handleDelete = async (id: number | string) => {

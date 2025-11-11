@@ -1,16 +1,48 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, startTransition } from 'react'
+import { useOptimistic } from 'react'
 import { getNotes } from '@/utils/notes-api-client'
 import NoteForm from '@/components/forms/NoteForm'
 import NotesList, { NotesListHandle } from '@/components/forms/NotesList'
 import { createClient } from '@/utils/supabase/client'
 
+// Define the Note type
+interface Note {
+  id: string | number;
+  note: string;
+  created_at: string;
+  user?: {
+    email: string;
+  };
+  tempId?: string;
+  error?: boolean;
+  [key: string]: any;
+}
+
 export default function UserNotesManager() {
-  const [notes, setNotes] = useState<any[]>([])
+  const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  // Use useOptimistic hook for optimistic updates
+  const [optimisticNotes, setOptimisticNotes] = useOptimistic(
+    notes,
+    (state: Note[], newNote: Note) => {
+      // If this is to remove an optimistic note due to error
+      if (newNote.error) {
+        return state.filter(note => note.id !== newNote.id)
+      }
+      // If this is a replacement for an optimistic note, replace it
+      if (newNote.tempId) {
+        return state.map(note => 
+          note.id === newNote.tempId ? { ...newNote, id: newNote.id } : note
+        )
+      }
+      // Otherwise, add the new note to the beginning of the list
+      return [newNote, ...state]
+    }
+  )
   const notesListRef = useRef<NotesListHandle>(null)
 
   const supabase = createClient()
@@ -67,16 +99,21 @@ export default function UserNotesManager() {
     }
   }, [])
 
-  const handleNoteAdded = (newNote: any) => {
-    // Handle optimistic updates through the NotesList ref
-    if (notesListRef.current) {
-      notesListRef.current.addOptimisticNote(newNote)
-    }
+  const handleNoteAdded = (newNote: Note) => {
+    // Set optimistic note using the useOptimistic hook wrapped in startTransition
+    startTransition(() => {
+      setOptimisticNotes(newNote)
+    })
     
     // If this is a confirmed note from the server (has a real ID), 
     // and it has a tempId, it's replacing an optimistic note
     if (newNote.id && typeof newNote.id === 'number' && newNote.tempId) {
-      // We've already handled this in NotesList
+      // Update the actual notes state as well
+      setNotes(prevNotes => 
+        prevNotes.map(note => 
+          note.id === newNote.tempId ? { ...newNote, id: newNote.id } : note
+        )
+      )
       return
     }
     
@@ -126,7 +163,7 @@ export default function UserNotesManager() {
       <div className="mt-6">
         <NotesList 
           ref={notesListRef}
-          notes={notes} 
+          notes={optimisticNotes} 
           onNoteDeleted={fetchNotes} 
           onNoteUpdated={handleNoteUpdated}
           currentUserId={currentUserId || undefined}
