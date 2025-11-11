@@ -24,17 +24,30 @@ async function getUserIdAndEmail() {
   return { userId: user.id, userEmail: user.email }
 }
 
-// GET /api/notes - Get all notes (no longer filtered by user)
+// GET /api/notes - Get notes where user is owner or has been granted access
 export async function GET(request: NextRequest) {
   try {
-    await getUserIdAndEmail()
+    const { userId } = await getUserIdAndEmail()
     const supabase = await createClient()
     const adminSupabase = createAdminClient()
     
-    // Get ALL notes (not filtered by user)
+    // Get notes where user is owner or has been granted access
+    const { data: accessNotes, error: accessError } = await supabase
+      .from('note_access')
+      .select('note_id')
+      .eq('user_id', userId)
+    
+    if (accessError) {
+      return NextResponse.json({ error: accessError.message }, { status: 500 })
+    }
+    
+    const accessNoteIds = accessNotes.map((access: any) => access.note_id)
+    
+    // Get notes where user is owner or has access
     const { data: notes, error: notesError } = await supabase
       .from('notes')
       .select('*')
+      .or(`user_id.eq.${userId},id.in.(${accessNoteIds.join(',') || '0'})`)
       .order('created_at', { ascending: false })
     
     if (notesError) {

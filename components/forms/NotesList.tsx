@@ -4,6 +4,7 @@ import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useTransition } from 'react'
 import { getNotes, deleteNote } from '@/utils/notes-api-client'
 import EditNoteForm from '@/components/forms/EditNoteForm'
+import NoteAccessManager from '@/components/forms/NoteAccessManager'
 
 export interface NotesListHandle {
   refreshNotes: () => void;
@@ -13,14 +14,16 @@ interface NotesListProps {
   notes?: any[];
   onNoteDeleted?: () => void;
   onNoteUpdated?: () => void;
+  currentUserId?: string;
 }
 
-const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNotes, onNoteDeleted, onNoteUpdated }, ref) => {
+const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNotes, onNoteDeleted, onNoteUpdated, currentUserId }, ref) => {
   const [notes, setNotes] = useState<any[]>(propNotes || [])
   const [loading, setLoading] = useState(!propNotes)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null)
+  const [sharingNoteId, setSharingNoteId] = useState<number | null>(null)
 
   const fetchNotes = async () => {
     try {
@@ -67,6 +70,7 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
 
   const handleUpdate = () => {
     setEditingNoteId(null)
+    setSharingNoteId(null)
     fetchNotes()
     if (onNoteUpdated) {
       onNoteUpdated()
@@ -75,6 +79,12 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
 
   const startEditing = (id: number) => {
     setEditingNoteId(id)
+    setSharingNoteId(null)
+  }
+
+  const startSharing = (id: number) => {
+    setSharingNoteId(sharingNoteId === id ? null : id)
+    setEditingNoteId(null)
   }
 
   const cancelEditing = () => {
@@ -96,7 +106,7 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
         {notes.map((n) => (
           <li
             key={n.id}
-            className="flex justify-between items-center border-b border-gray-200 py-3 bg-white rounded-md shadow-sm p-3"
+            className="border-b border-gray-200 py-3 bg-white rounded-md shadow-sm p-3"
           >
             {editingNoteId === n.id ? (
               <EditNoteForm 
@@ -107,30 +117,46 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
               />
             ) : (
               <>
-                <div className="flex-1">
-                  <div className="text-gray-800">{n.note}</div>
-                  {n.user && n.user.email && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      By: {n.user.email}
-                    </div>
-                  )}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="text-gray-800">{n.note}</div>
+                    {n.user && n.user.email && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        By: {n.user.email}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => startEditing(n.id)}
+                      disabled={pending}
+                      className="text-blue-500 text-sm hover:text-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                    >
+                      Edit
+                    </button>
+                    {n.user_id === currentUserId && (
+                      <>
+                        <button
+                          onClick={() => startSharing(n.id)}
+                          disabled={pending}
+                          className="text-green-500 text-sm hover:text-green-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 rounded"
+                        >
+                          {sharingNoteId === n.id ? 'Close' : 'Share'}
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => start(() => handleDelete(n.id))}
+                      disabled={pending}
+                      className="text-red-500 text-sm hover:text-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded"
+                    >
+                      {pending ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => startEditing(n.id)}
-                    disabled={pending}
-                    className="text-blue-500 text-sm hover:text-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => start(() => handleDelete(n.id))}
-                    disabled={pending}
-                    className="text-red-500 text-sm hover:text-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded"
-                  >
-                    {pending ? 'Deleting...' : 'Delete'}
-                  </button>
-                </div>
+                {n.user_id === currentUserId && sharingNoteId === n.id && (
+                  <NoteAccessManager noteId={n.id} />
+                )}
               </>
             )}
           </li>

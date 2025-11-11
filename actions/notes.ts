@@ -15,6 +15,36 @@ interface Note {
   };
 }
 
+// Helper function to check if user has access to a note
+async function checkNoteAccess(supabase: any, noteId: number, userId: string) {
+  // Check if user is the owner
+  const { data: note, error: noteError } = await supabase
+    .from('notes')
+    .select('user_id')
+    .eq('id', noteId)
+    .single()
+  
+  if (noteError || !note) {
+    throw new Error('Note not found')
+  }
+  
+  // If user is the owner, they have access
+  if (note.user_id === userId) {
+    return true
+  }
+  
+  // Check if user has been granted access
+  const { data: access, error: accessError } = await supabase
+    .from('note_access')
+    .select('id')
+    .eq('note_id', noteId)
+    .eq('user_id', userId)
+    .single()
+  
+  // If there's no access error and we have access data, user has access
+  return !accessError && !!access
+}
+
 // ➕ Create
 export async function createNote(formData: FormData) {
   const supabase = await createClient()
@@ -40,12 +70,15 @@ export async function deleteNote(id: number) {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) throw new Error('Unauthorized')
   
-  // Delete only if the note belongs to the current user
+  // Check if user has access to delete this note
+  const hasAccess = await checkNoteAccess(supabase, id, user.id)
+  if (!hasAccess) throw new Error('Unauthorized: You do not have access to this note')
+  
+  // Delete the note
   const { error } = await supabase
     .from('notes')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id)
     
   if (error) throw error
   revalidatePath('/notes')
@@ -60,10 +93,21 @@ export async function getNotes() {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) throw new Error('Unauthorized')
   
+  // Get notes where user is owner or has been granted access
+  const { data: accessNotes, error: accessError } = await supabase
+    .from('note_access')
+    .select('note_id')
+    .eq('user_id', user.id)
+  
+  if (accessError) throw accessError
+  
+  const accessNoteIds = accessNotes.map((access: any) => access.note_id)
+  
   // Get ALL notes (not filtered by user)
   const { data: notes, error: notesError } = await supabase
     .from('notes')
     .select('*')
+    .or(`user_id.eq.${user.id},id.in.(${accessNoteIds.join(',') || '0'})`)
     .order('created_at', { ascending: false })
   
   if (notesError) throw notesError

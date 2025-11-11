@@ -4,11 +4,27 @@ import { useState, useEffect } from 'react'
 import { getNotes } from '@/utils/notes-api-client'
 import NoteForm from '@/components/forms/NoteForm'
 import NotesList from '@/components/forms/NotesList'
+import { createClient } from '@/utils/supabase/client'
 
 export default function UserNotesManager() {
   const [notes, setNotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Get current user
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUserId(user.id)
+      }
+    }
+    
+    fetchUser()
+  }, [])
 
   const fetchNotes = async () => {
     try {
@@ -75,6 +91,7 @@ export default function UserNotesManager() {
                 notes={notes} 
                 onNoteDeleted={fetchNotes} 
                 onNoteUpdated={handleNoteUpdated} 
+                currentUserId={currentUserId || undefined}
               />
             </div>
           )}
