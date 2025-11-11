@@ -34,26 +34,31 @@ export default function NotesManager() {
     if (notesListRef.current) {
       notesListRef.current.addOptimisticNote(newNote)
     }
+    
+    // Handle error notifications
+    if (newNote.error) {
+      setError('Failed to create note. Please try again.')
+    }
   }
 
   if (loading) return <p>Loading notes...</p>
   
-  if (error) {
-    return (
-      <div className="text-red-500 p-4 bg-red-50 rounded">
-        <p>Error: {error}</p>
-        <button 
-          onClick={fetchNotes}
-          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Retry
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="text-red-500 p-4 bg-red-50 rounded">
+          <p>Error: {error}</p>
+          <button 
+            onClick={() => {
+              setError(null)
+              fetchNotes()
+            }}
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       <NoteForm onNoteAdded={handleNoteAdded} />
       <NotesList 
         ref={notesListRef}

@@ -40,12 +40,14 @@ export default function EditNoteForm({
       if (onNoteUpdated) {
         onNoteUpdated(savedNote)
       }
+      // Clear any previous error state
+      setError(null)
     } catch (error: any) {
       console.error('Failed to update note:', error)
       setError(error.message || 'Failed to update note. Please try again.')
-      // Revert to initial note on error
+      // Revert to initial note on error and notify parent of the error
       if (onNoteUpdated) {
-        onNoteUpdated({ note: initialNote })
+        onNoteUpdated({ note: initialNote, error: true })
       }
     }
   }

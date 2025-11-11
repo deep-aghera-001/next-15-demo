@@ -106,17 +106,25 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
     }
   }
 
-  const handleUpdate = () => {
-    setEditingNoteId(null)
-    setSharingNoteId(null)
-    if (onNoteUpdated) {
-      onNoteUpdated()
+  const handleUpdate = (updatedNoteData?: any) => {
+    // If this is an error notification, set the error state
+    if (updatedNoteData && updatedNoteData.error) {
+      setError('Failed to update note. Please try again.')
+    } else {
+      // Normal update flow
+      setEditingNoteId(null)
+      setSharingNoteId(null)
+      if (onNoteUpdated) {
+        onNoteUpdated()
+      }
     }
   }
 
   const startEditing = (id: number | string) => {
     setEditingNoteId(id)
     setSharingNoteId(null)
+    // Clear any existing errors when starting to edit
+    setError(null)
   }
 
   const startSharing = (id: number | string) => {
@@ -126,6 +134,8 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
 
   const cancelEditing = () => {
     setEditingNoteId(null)
+    // Clear any existing errors when canceling edit
+    setError(null)
   }
 
   // If we have prop notes, don't show loading
@@ -134,6 +144,17 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="text-red-500 p-4 bg-red-50 rounded">
+          <p>Error: {error}</p>
+          <button 
+            onClick={() => setError(null)}
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {notes.map((note) => (
         <div key={note.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
           {editingNoteId === note.id ? (

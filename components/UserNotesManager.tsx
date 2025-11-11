@@ -81,8 +81,9 @@ export default function UserNotesManager() {
     }
     
     // If this is an error notification for an optimistic note, 
-    // we've already handled this in NotesList
+    // display the error to the user
     if (newNote.error) {
+      setError('Failed to create note. Please try again.')
       return
     }
     
@@ -99,30 +100,26 @@ export default function UserNotesManager() {
 
   if (loading) return <p className="text-gray-700">Loading notes...</p>
   
-  if (error) {
-    return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">My Notes</h2>
-        </div>
-        <div className="text-red-500 p-4 bg-red-50 rounded">
-          <p>Error: {error}</p>
-          <button 
-            onClick={fetchNotes}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">My Notes</h2>
       </div>
+      
+      {error && (
+        <div className="text-red-500 p-4 bg-red-50 rounded mb-4">
+          <p>Error: {error}</p>
+          <button 
+            onClick={() => {
+              setError(null)
+              fetchNotes()
+            }}
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       
       <NoteForm onNoteAdded={handleNoteAdded} />
       
