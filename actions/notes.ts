@@ -47,10 +47,10 @@ export async function getNotes() {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) throw new Error('Unauthorized')
   
+  // Get ALL notes (not filtered by user)
   const { data, error } = await supabase
     .from('notes')
     .select('*')
-    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
   
   if (error) throw error

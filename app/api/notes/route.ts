@@ -12,17 +12,16 @@ async function getUserIdAndEmail() {
   return { userId: user.id, userEmail: user.email }
 }
 
-// GET /api/notes - Get all notes for the current user
+// GET /api/notes - Get all notes (no longer filtered by user)
 export async function GET(request: NextRequest) {
   try {
     const { userId, userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     
-    // Get only notes belonging to the current user
+    // Get ALL notes (not filtered by user)
     const { data, error } = await supabase
       .from('notes')
       .select('*')
-      .eq('user_id', userId)
       .order('created_at', { ascending: false })
     
     if (error) {
