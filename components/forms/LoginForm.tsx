@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { login, signInWithGitHub, signInWithGoogle } from '../../app/login/actions'
+import { login, signInWithGitHub, signInWithGoogle } from '../../actions/login'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
-import { createNote } from '../../app/action/notes'
+import { createNote } from '../../actions/notes'
 
 export default function NoteForm() {
   const [pending, start] = useTransition()

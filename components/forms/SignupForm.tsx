@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { signup, signUpWithGitHub, signUpWithGoogle } from '../../app/signup/actions'
+import { signup, signUpWithGitHub, signUpWithGoogle } from '../../actions/signup'
 import Link from 'next/link'
 
 type FormState = {

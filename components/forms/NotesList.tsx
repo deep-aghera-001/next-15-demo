@@ -1,7 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
-import { deleteNote } from '../../app/action/notes'
+import { deleteNote } from '../../actions/notes'
 
 export default function NotesList({ notes }: { notes: any[] }) {
   const [pending, start] = useTransition()
