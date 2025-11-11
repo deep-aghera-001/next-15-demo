@@ -3,13 +3,13 @@ import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
 
 // Helper function to get user ID from session
-async function getUserId() {
+async function getUserIdAndEmail() {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) {
     throw new Error('Unauthorized')
   }
-  return user.id
+  return { userId: user.id, userEmail: user.email }
 }
 
 // PATCH /api/notes/[id] - Update a note (only if it belongs to the current user)
@@ -19,7 +19,7 @@ export async function PATCH(
 ) {
   try {
     const resolvedParams = await params;
-    const userId = await getUserId()
+    const { userId, userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     
     const noteData = await request.json()
@@ -40,7 +40,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Note not found or unauthorized' }, { status: 404 })
     }
     
-    return NextResponse.json(data[0])
+    // Add user email to the updated note
+    const noteWithUser = {
+      ...data[0],
+      user: { email: userEmail }
+    }
+    
+    return NextResponse.json(noteWithUser)
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -56,7 +62,7 @@ export async function DELETE(
 ) {
   try {
     const resolvedParams = await params;
-    const userId = await getUserId()
+    const { userId, userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     
     // Delete the note only if it belongs to the current user
@@ -75,7 +81,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Note not found or unauthorized' }, { status: 404 })
     }
     
-    return NextResponse.json({ message: 'Note deleted successfully' })
+    // Add user email to the deleted note data
+    const noteWithUser = {
+      ...data[0],
+      user: { email: userEmail }
+    }
+    
+    return NextResponse.json({ message: 'Note deleted successfully', note: noteWithUser })
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

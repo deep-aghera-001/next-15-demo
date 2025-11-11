@@ -107,7 +107,14 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
               />
             ) : (
               <>
-                <span className="text-gray-800">{n.note}</span>
+                <div className="flex-1">
+                  <div className="text-gray-800">{n.note}</div>
+                  {n.user && n.user.email && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      By: {n.user.email}
+                    </div>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => startEditing(n.id)}

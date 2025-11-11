@@ -3,19 +3,19 @@ import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
 
 // Helper function to get user ID from session
-async function getUserId() {
+async function getUserIdAndEmail() {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) {
     throw new Error('Unauthorized')
   }
-  return user.id
+  return { userId: user.id, userEmail: user.email }
 }
 
 // GET /api/notes - Get all notes for the current user
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserId()
+    const { userId, userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     
     // Get only notes belonging to the current user
@@ -29,7 +29,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     
-    return NextResponse.json(data)
+    // Add user email to each note
+    const notesWithUser = data.map(note => ({
+      ...note,
+      user: { email: userEmail }
+    }))
+    
+    return NextResponse.json(notesWithUser)
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -41,7 +47,7 @@ export async function GET(request: NextRequest) {
 // POST /api/notes - Create a new note for the current user
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserId()
+    const { userId, userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     
     const noteData = await request.json()
@@ -60,7 +66,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     
-    return NextResponse.json(data[0])
+    // Add user email to the created note
+    const noteWithUser = {
+      ...data[0],
+      user: { email: userEmail }
+    }
+    
+    return NextResponse.json(noteWithUser)
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
