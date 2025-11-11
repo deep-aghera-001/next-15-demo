@@ -9,8 +9,9 @@ export async function getNotes() {
   })
   
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to fetch notes: ${response.status} ${response.statusText} - ${errorText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || 'Failed to fetch notes. Please try again.';
+    throw new Error(errorMessage);
   }
   
   return response.json()
@@ -26,8 +27,9 @@ export async function createNote(noteData: { note: string }) {
   })
   
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to create note: ${response.status} ${response.statusText} - ${errorText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || 'Failed to create note. Please try again.';
+    throw new Error(errorMessage);
   }
   
   return response.json()
@@ -43,8 +45,9 @@ export async function updateNote(id: string, noteData: { note: string }) {
   })
   
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to update note: ${response.status} ${response.statusText} - ${errorText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || 'Failed to update note. Please try again.';
+    throw new Error(errorMessage);
   }
   
   return response.json()
@@ -56,8 +59,9 @@ export async function deleteNote(id: string) {
   })
   
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to delete note: ${response.status} ${response.statusText} - ${errorText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || 'Failed to delete note. Please try again.';
+    throw new Error(errorMessage);
   }
   
   return response.json()
