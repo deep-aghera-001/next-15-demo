@@ -2,7 +2,7 @@
 
 import { useEffect, useState, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
+import { checkAuthStatus } from '@/actions/auth'
 
 interface AuthGuardProps {
   children: ReactNode
@@ -12,13 +12,12 @@ interface AuthGuardProps {
 export default function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { isAuthenticated } = await checkAuthStatus()
       
-      if (!user) {
+      if (!isAuthenticated) {
         router.push(redirectTo)
       } else {
         setLoading(false)
@@ -26,7 +25,7 @@ export default function AuthGuard({ children, redirectTo = '/login' }: AuthGuard
     }
 
     checkAuth()
-  }, [router, supabase, redirectTo])
+  }, [router, redirectTo])
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>

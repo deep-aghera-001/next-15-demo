@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
+import { checkAuthStatus } from '@/actions/auth'
 
 export default function AuthRedirect({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { isAuthenticated } = await checkAuthStatus()
       
-      if (user) {
+      if (isAuthenticated) {
         router.push('/dashboard')
       } else {
         setLoading(false)
@@ -21,7 +20,7 @@ export default function AuthRedirect({ children }: { children: React.ReactNode }
     }
 
     checkAuth()
-  }, [router, supabase])
+  }, [router])
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>

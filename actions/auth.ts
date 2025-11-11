@@ -1,30 +1,27 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/server'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-export async function signupAction(prevState: any, formData: FormData) {
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-
-  const { error } = await supabase.auth.signUp({ email, password })
-  if (error) return { success: false, message: error.message }
-  return { success: true, message: 'Check your email to confirm signup.' }
+export async function checkAuthStatus() {
+  const supabase = await createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  
+  if (error || !user) {
+    return { isAuthenticated: false, user: null }
+  }
+  
+  return { isAuthenticated: true, user }
 }
 
-export async function loginAction(prevState: any, formData: FormData) {
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) return { success: false, message: error.message }
-  return { success: true, message: 'Logged in successfully.' }
-}
-
-export async function logoutAction() {
-  await supabase.auth.signOut()
+export async function checkAdminStatus() {
+  const supabase = await createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  
+  if (error || !user) {
+    return { isAdmin: false, user: null }
+  }
+  
+  // Check if user has admin role (this would depend on your specific implementation)
+  // For now, we'll just check if the user exists
+  return { isAdmin: true, user }
 }
