@@ -93,21 +93,10 @@ export async function getNotes() {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) throw new Error('Unauthorized')
   
-  // Get notes where user is owner or has been granted access
-  const { data: accessNotes, error: accessError } = await supabase
-    .from('note_access')
-    .select('note_id')
-    .eq('user_id', user.id)
-  
-  if (accessError) throw accessError
-  
-  const accessNoteIds = accessNotes.map((access: any) => access.note_id)
-  
-  // Get ALL notes (not filtered by user)
+  // Get ALL notes
   const { data: notes, error: notesError } = await supabase
     .from('notes')
     .select('*')
-    .or(`user_id.eq.${user.id},id.in.(${accessNoteIds.join(',') || '0'})`)
     .order('created_at', { ascending: false })
   
   if (notesError) throw notesError
