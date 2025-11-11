@@ -1,6 +1,18 @@
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/server-admin'
 import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
+import { User } from '@supabase/auth-js'
+
+interface Note {
+  id: number;
+  user_id: string;
+  note: string;
+  created_at: string;
+  user?: {
+    email: string;
+  };
+}
 
 // Helper function to get user ID from session
 async function getUserIdAndEmail() {
@@ -15,23 +27,34 @@ async function getUserIdAndEmail() {
 // GET /api/notes - Get all notes (no longer filtered by user)
 export async function GET(request: NextRequest) {
   try {
-    const { userId, userEmail } = await getUserIdAndEmail()
+    await getUserIdAndEmail()
     const supabase = await createClient()
+    const adminSupabase = createAdminClient()
     
     // Get ALL notes (not filtered by user)
-    const { data, error } = await supabase
+    const { data: notes, error: notesError } = await supabase
       .from('notes')
       .select('*')
       .order('created_at', { ascending: false })
     
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (notesError) {
+      return NextResponse.json({ error: notesError.message }, { status: 500 })
     }
     
-    // Add user email to each note
-    const notesWithUser = data.map(note => ({
+    // Get all user emails using admin client directly from auth.users
+    const { data: users, error: usersError } = await adminSupabase.auth.admin.listUsers()
+    
+    if (usersError) {
+      return NextResponse.json({ error: usersError.message }, { status: 500 })
+    }
+    
+    // Create a map of user_id to email for efficient lookup
+    const userMap = new Map(users.users.map((user: User) => [user.id, user.email || 'Unknown Email']))
+    
+    // Add correct user information to each note
+    const notesWithUser: Note[] = notes.map((note: any) => ({
       ...note,
-      user: { email: userEmail }
+      user: { email: userMap.get(note.user_id) || 'Unknown User' }
     }))
     
     return NextResponse.json(notesWithUser)
@@ -66,9 +89,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Add user email to the created note
-    const noteWithUser = {
+    const noteWithUser: Note = {
       ...data[0],
-      user: { email: userEmail }
+      user: { email: userEmail || 'Unknown User' }
     }
     
     return NextResponse.json(noteWithUser)

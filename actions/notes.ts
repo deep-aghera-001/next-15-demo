@@ -2,6 +2,18 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/server-admin'
+import { User } from '@supabase/auth-js'
+
+interface Note {
+  id: number;
+  user_id: string;
+  note: string;
+  created_at: string;
+  user?: {
+    email: string;
+  };
+}
 
 // ➕ Create
 export async function createNote(formData: FormData) {
@@ -42,17 +54,33 @@ export async function deleteNote(id: number) {
 // 📋 Fetch
 export async function getNotes() {
   const supabase = await createClient()
+  const adminSupabase = createAdminClient()
   
   // Get the current user
   const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) throw new Error('Unauthorized')
   
   // Get ALL notes (not filtered by user)
-  const { data, error } = await supabase
+  const { data: notes, error: notesError } = await supabase
     .from('notes')
     .select('*')
     .order('created_at', { ascending: false })
   
-  if (error) throw error
-  return data
+  if (notesError) throw notesError
+  
+  // Get all user emails using admin client directly from auth.users
+  const { data: users, error: usersError } = await adminSupabase.auth.admin.listUsers()
+  
+  if (usersError) throw usersError
+  
+  // Create a map of user_id to email for efficient lookup
+  const userMap = new Map(users.users.map((user: User) => [user.id, user.email || 'Unknown Email']))
+  
+  // Add correct user information to each note
+  const notesWithUser: Note[] = notes.map((note: any) => ({
+    ...note,
+    user: { email: userMap.get(note.user_id) || 'Unknown User' }
+  }))
+  
+  return notesWithUser
 }
