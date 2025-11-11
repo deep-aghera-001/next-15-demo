@@ -25,8 +25,9 @@ export default function UserNotesManager() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  
   // Use useOptimistic hook for optimistic updates
-  const [optimisticNotes, setOptimisticNotes] = useOptimistic(
+  const [optimisticNotes, addOptimisticNote] = useOptimistic(
     notes,
     (state: Note[], newNote: Note) => {
       // If this is to remove an optimistic note due to error
@@ -100,9 +101,9 @@ export default function UserNotesManager() {
   }, [])
 
   const handleNoteAdded = (newNote: Note) => {
-    // Set optimistic note using the useOptimistic hook wrapped in startTransition
+    // Set optimistic note using the useOptimistic hook
     startTransition(() => {
-      setOptimisticNotes(newNote)
+      addOptimisticNote(newNote)
     })
     
     // If this is a confirmed note from the server (has a real ID), 
@@ -131,6 +132,11 @@ export default function UserNotesManager() {
   }
 
   const handleNoteUpdated = () => {
+    // Refresh the notes list
+    fetchNotes()
+  }
+
+  const handleNoteDeleted = () => {
     // Refresh the notes list
     fetchNotes()
   }
@@ -164,7 +170,7 @@ export default function UserNotesManager() {
         <NotesList 
           ref={notesListRef}
           notes={optimisticNotes} 
-          onNoteDeleted={fetchNotes} 
+          onNoteDeleted={handleNoteDeleted} 
           onNoteUpdated={handleNoteUpdated}
           currentUserId={currentUserId || undefined}
         />

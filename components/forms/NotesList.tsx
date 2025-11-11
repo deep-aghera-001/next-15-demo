@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
-import { useTransition } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle, startTransition } from 'react'
+import { useTransition, useOptimistic } from 'react'
 import { getNotes, deleteNote } from '@/utils/notes-api-client'
 import EditNoteForm from '@/components/forms/EditNoteForm'
 import NoteAccessManager from '@/components/forms/NoteAccessManager'
 
 export interface NotesListHandle {
   refreshNotes: () => void;
-  // Removed the optimistic update methods since we're now using useOptimistic hook
 }
 
 interface Note {
@@ -61,7 +60,6 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
 
   useImperativeHandle(ref, () => ({
     refreshNotes: fetchNotes
-    // Removed the optimistic update methods since we're now using useOptimistic hook
   }))
 
   const handleDelete = async (id: number | string) => {
