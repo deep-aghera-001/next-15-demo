@@ -41,6 +41,29 @@ export default function UserNotesManager() {
 
   useEffect(() => {
     fetchNotes()
+    
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('user-notes-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notes'
+        },
+        (payload) => {
+          // For real-time updates, we need to refetch all notes to ensure
+          // we have the correct user information for each note
+          fetchNotes()
+        }
+      )
+      .subscribe()
+
+    // Clean up subscription
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleNoteAdded = () => {
