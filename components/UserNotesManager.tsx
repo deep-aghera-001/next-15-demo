@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getNotes } from '@/utils/notes-api-client'
 import NoteForm from '@/components/forms/NoteForm'
-import NotesList from '@/components/forms/NotesList'
+import NotesList, { NotesListHandle } from '@/components/forms/NotesList'
 import { createClient } from '@/utils/supabase/client'
 
 export default function UserNotesManager() {
@@ -11,6 +11,7 @@ export default function UserNotesManager() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const notesListRef = useRef<NotesListHandle>(null)
 
   const supabase = createClient()
 
@@ -66,9 +67,29 @@ export default function UserNotesManager() {
     }
   }, [])
 
-  const handleNoteAdded = () => {
-    // Refresh the notes list
-    fetchNotes()
+  const handleNoteAdded = (newNote: any) => {
+    // Handle optimistic updates through the NotesList ref
+    if (notesListRef.current) {
+      notesListRef.current.addOptimisticNote(newNote)
+    }
+    
+    // If this is a confirmed note from the server (has a real ID), 
+    // and it has a tempId, it's replacing an optimistic note
+    if (newNote.id && typeof newNote.id === 'number' && newNote.tempId) {
+      // We've already handled this in NotesList
+      return
+    }
+    
+    // If this is an error notification for an optimistic note, 
+    // we've already handled this in NotesList
+    if (newNote.error) {
+      return
+    }
+    
+    // If this is a new optimistic note, add it to our state too
+    if (newNote.id && newNote.id.toString().startsWith('optimistic_')) {
+      setNotes(prevNotes => [newNote, ...prevNotes])
+    }
   }
 
   const handleNoteUpdated = () => {
@@ -102,23 +123,17 @@ export default function UserNotesManager() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">My Notes</h2>
       </div>
-      <div className="mt-4">
-        <NoteForm onNoteAdded={handleNoteAdded} />
-        <div className="mt-6">
-          <h3 className="text-lg font-medium text-gray-700 mb-2">Your Notes</h3>
-          {notes.length === 0 ? (
-            <p className="text-gray-500 py-4">You haven't created any notes yet.</p>
-          ) : (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <NotesList 
-                notes={notes} 
-                onNoteDeleted={fetchNotes} 
-                onNoteUpdated={handleNoteUpdated} 
-                currentUserId={currentUserId || undefined}
-              />
-            </div>
-          )}
-        </div>
+      
+      <NoteForm onNoteAdded={handleNoteAdded} />
+      
+      <div className="mt-6">
+        <NotesList 
+          ref={notesListRef}
+          notes={notes} 
+          onNoteDeleted={fetchNotes} 
+          onNoteUpdated={handleNoteUpdated}
+          currentUserId={currentUserId || undefined}
+        />
       </div>
     </div>
   )

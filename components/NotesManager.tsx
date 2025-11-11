@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getNotes } from '@/utils/notes-api-client'
 import NoteForm from '@/components/forms/NoteForm'
-import NotesList from '@/components/forms/NotesList'
+import NotesList, { NotesListHandle } from '@/components/forms/NotesList'
 
 export default function NotesManager() {
   const [notes, setNotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const notesListRef = useRef<NotesListHandle>(null)
 
   const fetchNotes = async () => {
     try {
@@ -27,9 +28,12 @@ export default function NotesManager() {
     fetchNotes()
   }, [])
 
-  const handleNoteAdded = () => {
-    // Refresh the notes list
-    fetchNotes()
+  const handleNoteAdded = (newNote: any) => {
+    // If it's an optimistic note (temporary ID), add it optimistically
+    // If it's a confirmed note from server, replace the optimistic one
+    if (notesListRef.current) {
+      notesListRef.current.addOptimisticNote(newNote)
+    }
   }
 
   if (loading) return <p>Loading notes...</p>
@@ -51,7 +55,11 @@ export default function NotesManager() {
   return (
     <div className="space-y-4">
       <NoteForm onNoteAdded={handleNoteAdded} />
-      <NotesList notes={notes} onNoteDeleted={fetchNotes} />
+      <NotesList 
+        ref={notesListRef}
+        notes={notes} 
+        onNoteDeleted={fetchNotes} 
+      />
     </div>
   )
 }

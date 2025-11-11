@@ -8,6 +8,9 @@ import NoteAccessManager from '@/components/forms/NoteAccessManager'
 
 export interface NotesListHandle {
   refreshNotes: () => void;
+  addOptimisticNote: (note: any) => void;
+  updateNoteOptimistically: (id: number, updatedNote: any) => void;
+  removeNoteOptimistically: (id: string) => void;
 }
 
 interface NotesListProps {
@@ -22,8 +25,8 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
   const [loading, setLoading] = useState(!propNotes)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [editingNoteId, setEditingNoteId] = useState<number | null>(null)
-  const [sharingNoteId, setSharingNoteId] = useState<number | null>(null)
+  const [editingNoteId, setEditingNoteId] = useState<number | string | null>(null)
+  const [sharingNoteId, setSharingNoteId] = useState<number | string | null>(null)
 
   const fetchNotes = async () => {
     try {
@@ -49,14 +52,47 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
   }, [propNotes])
 
   useImperativeHandle(ref, () => ({
-    refreshNotes: fetchNotes
+    refreshNotes: fetchNotes,
+    addOptimisticNote: (newNote) => {
+      // If this is a replacement for an optimistic note, replace it
+      if (newNote.tempId) {
+        setNotes(prevNotes => 
+          prevNotes.map(note => 
+            note.id === newNote.tempId ? { ...newNote, id: newNote.id } : note
+          )
+        )
+      } 
+      // If this is to remove an optimistic note due to error
+      else if (newNote.error) {
+        setNotes(prevNotes => prevNotes.filter(note => note.id !== newNote.id))
+      }
+      // Otherwise, add the new note to the beginning of the list
+      else {
+        setNotes(prevNotes => [newNote, ...prevNotes])
+      }
+    },
+    updateNoteOptimistically: (id, updatedNote) => {
+      setNotes(prevNotes => 
+        prevNotes.map(note => 
+          note.id === id ? { ...note, ...updatedNote } : note
+        )
+      )
+    },
+    removeNoteOptimistically: (id) => {
+      setNotes(prevNotes => prevNotes.filter(note => note.id !== id))
+    }
   }))
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number | string) => {
     try {
-      await deleteNote(id.toString())
-      // Remove the deleted note from the state
+      // Optimistically remove the note
       setNotes(notes.filter(note => note.id !== id))
+      
+      // If it's a real note (not optimistic), delete from server
+      if (typeof id === 'number') {
+        await deleteNote(id.toString())
+      }
+      
       setError(null)
       // Notify parent if needed
       if (onNoteDeleted) {
@@ -65,24 +101,25 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
     } catch (error: any) {
       console.error('Failed to delete note:', error)
       setError(error.message || 'Failed to delete note. Please try again.')
+      // Revert optimistic update on error
+      fetchNotes()
     }
   }
 
   const handleUpdate = () => {
     setEditingNoteId(null)
     setSharingNoteId(null)
-    fetchNotes()
     if (onNoteUpdated) {
       onNoteUpdated()
     }
   }
 
-  const startEditing = (id: number) => {
+  const startEditing = (id: number | string) => {
     setEditingNoteId(id)
     setSharingNoteId(null)
   }
 
-  const startSharing = (id: number) => {
+  const startSharing = (id: number | string) => {
     setSharingNoteId(sharingNoteId === id ? null : id)
     setEditingNoteId(null)
   }
@@ -96,72 +133,58 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
   if (notes.length === 0) return <p className="text-gray-500">No notes yet.</p>
 
   return (
-    <div className="space-y-2">
-      {error && (
-        <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
-          {error}
-        </div>
-      )}
-      <ul className="space-y-2">
-        {notes.map((n) => (
-          <li
-            key={n.id}
-            className="border-b border-gray-200 py-3 bg-white rounded-md shadow-sm p-3"
-          >
-            {editingNoteId === n.id ? (
-              <EditNoteForm 
-                noteId={n.id} 
-                initialNote={n.note} 
-                onNoteUpdated={handleUpdate} 
-                onCancel={cancelEditing} 
-              />
-            ) : (
-              <>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="text-gray-800">{n.note}</div>
-                    {n.user && n.user.email && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        By: {n.user.email}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => startEditing(n.id)}
-                      disabled={pending}
-                      className="text-blue-500 text-sm hover:text-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                    >
-                      Edit
-                    </button>
-                    {n.user_id === currentUserId && (
-                      <>
-                        <button
-                          onClick={() => startSharing(n.id)}
-                          disabled={pending}
-                          className="text-green-500 text-sm hover:text-green-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 rounded"
-                        >
-                          {sharingNoteId === n.id ? 'Close' : 'Share'}
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={() => start(() => handleDelete(n.id))}
-                      disabled={pending}
-                      className="text-red-500 text-sm hover:text-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded"
-                    >
-                      {pending ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>
+    <div className="space-y-4">
+      {notes.map((note) => (
+        <div key={note.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+          {editingNoteId === note.id ? (
+            <EditNoteForm
+              noteId={typeof note.id === 'number' ? note.id : 0}
+              initialNote={note.note}
+              onNoteUpdated={handleUpdate}
+              onCancel={cancelEditing}
+            />
+          ) : (
+            <>
+              <div className="flex justify-between items-start">
+                <p className="text-gray-800">{note.note}</p>
+                <div className="flex gap-2">
+                  {typeof note.id === 'number' && (
+                    <>
+                      <button
+                        onClick={() => startEditing(note.id)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(note.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => startSharing(note.id)}
+                        className="text-green-600 hover:text-green-800"
+                      >
+                        Share
+                      </button>
+                    </>
+                  )}
                 </div>
-                {n.user_id === currentUserId && sharingNoteId === n.id && (
-                  <NoteAccessManager noteId={n.id} />
-                )}
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+              </div>
+              <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                <span>{note.user?.email || 'Unknown user'}</span>
+                <span>{new Date(note.created_at).toLocaleString()}</span>
+              </div>
+              {sharingNoteId === note.id && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <NoteAccessManager noteId={typeof note.id === 'number' ? note.id : 0} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ))}
     </div>
   )
 })

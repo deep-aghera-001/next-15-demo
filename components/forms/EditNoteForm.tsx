@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useState } from 'react'
+import { useTransition, useState, useEffect } from 'react'
 import { updateNote } from '@/utils/notes-api-client'
 
 export default function EditNoteForm({ 
@@ -11,25 +11,42 @@ export default function EditNoteForm({
 }: { 
   noteId: number; 
   initialNote: string; 
-  onNoteUpdated: () => void; 
+  onNoteUpdated: (updatedNote?: any) => void; 
   onCancel: () => void 
 }) {
   const [pending, start] = useTransition()
   const [note, setNote] = useState(initialNote)
   const [error, setError] = useState<string | null>(null)
 
+  // Update local state when initialNote changes
+  useEffect(() => {
+    setNote(initialNote)
+  }, [initialNote])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!note.trim()) return
     
     setError(null)
+    
+    // Optimistically update the note
+    if (onNoteUpdated) {
+      onNoteUpdated({ note: note.trim() })
+    }
+    
     try {
-      await updateNote(noteId.toString(), { note })
-      // Notify parent component if needed
-      onNoteUpdated()
+      const savedNote = await updateNote(noteId.toString(), { note: note.trim() })
+      // Update with actual data from server
+      if (onNoteUpdated) {
+        onNoteUpdated(savedNote)
+      }
     } catch (error: any) {
       console.error('Failed to update note:', error)
       setError(error.message || 'Failed to update note. Please try again.')
+      // Revert to initial note on error
+      if (onNoteUpdated) {
+        onNoteUpdated({ note: initialNote })
+      }
     }
   }
 
