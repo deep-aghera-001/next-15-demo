@@ -9,7 +9,8 @@ export async function getNotes() {
   })
   
   if (!response.ok) {
-    throw new Error('Failed to fetch notes')
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch notes: ${response.status} ${response.statusText} - ${errorText}`);
   }
   
   return response.json()
@@ -25,7 +26,8 @@ export async function createNote(noteData: { note: string }) {
   })
   
   if (!response.ok) {
-    throw new Error('Failed to create note')
+    const errorText = await response.text();
+    throw new Error(`Failed to create note: ${response.status} ${response.statusText} - ${errorText}`);
   }
   
   return response.json()
@@ -41,7 +43,8 @@ export async function updateNote(id: string, noteData: { note: string }) {
   })
   
   if (!response.ok) {
-    throw new Error('Failed to update note')
+    const errorText = await response.text();
+    throw new Error(`Failed to update note: ${response.status} ${response.statusText} - ${errorText}`);
   }
   
   return response.json()
@@ -53,7 +56,8 @@ export async function deleteNote(id: string) {
   })
   
   if (!response.ok) {
-    throw new Error('Failed to delete note')
+    const errorText = await response.text();
+    throw new Error(`Failed to delete note: ${response.status} ${response.statusText} - ${errorText}`);
   }
   
   return response.json()

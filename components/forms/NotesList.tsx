@@ -17,13 +17,16 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
   const [notes, setNotes] = useState<any[]>(propNotes || [])
   const [loading, setLoading] = useState(!propNotes)
   const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
 
   const fetchNotes = async () => {
     try {
       const fetchedNotes = await getNotes()
       setNotes(fetchedNotes)
-    } catch (error) {
+      setError(null)
+    } catch (error: any) {
       console.error('Failed to fetch notes:', error)
+      setError(error.message || 'Failed to load notes. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -48,12 +51,14 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
       await deleteNote(id.toString())
       // Remove the deleted note from the state
       setNotes(notes.filter(note => note.id !== id))
+      setError(null)
       // Notify parent if needed
       if (onNoteDeleted) {
         onNoteDeleted()
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete note:', error)
+      setError(error.message || 'Failed to delete note. Please try again.')
     }
   }
 
@@ -62,23 +67,30 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
   if (notes.length === 0) return <p>No notes yet.</p>
 
   return (
-    <ul className="space-y-2">
-      {notes.map((n) => (
-        <li
-          key={n.id}
-          className="flex justify-between items-center border-b py-2"
-        >
-          <span>{n.note}</span>
-          <button
-            onClick={() => start(() => handleDelete(n.id))}
-            disabled={pending}
-            className="text-red-500 text-sm"
+    <div className="space-y-2">
+      {error && (
+        <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
+          {error}
+        </div>
+      )}
+      <ul className="space-y-2">
+        {notes.map((n) => (
+          <li
+            key={n.id}
+            className="flex justify-between items-center border-b py-2"
           >
-            {pending ? '...' : 'Delete'}
-          </button>
-        </li>
-      ))}
-    </ul>
+            <span>{n.note}</span>
+            <button
+              onClick={() => start(() => handleDelete(n.id))}
+              disabled={pending}
+              className="text-red-500 text-sm disabled:opacity-50"
+            >
+              {pending ? 'Deleting...' : 'Delete'}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 })
 

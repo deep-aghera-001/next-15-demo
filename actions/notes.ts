@@ -1,31 +1,56 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createAdminClient } from '@/utils/supabase/server-admin'
+import { createClient } from '@/utils/supabase/server'
 
 // ➕ Create
 export async function createNote(formData: FormData) {
-  const supabase = createAdminClient()
+  const supabase = await createClient()
+  
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) throw new Error('Unauthorized')
+  
   const note = formData.get('note') as string
-  const { error } = await supabase.from('notes').insert({ note })
+  const { error } = await supabase.from('notes').insert({ 
+    note,
+    user_id: user.id 
+  })
   if (error) throw error
   revalidatePath('/notes')
 }
 
 // 🗑️ Delete
 export async function deleteNote(id: number) {
-  const supabase = createAdminClient()
-  const { error } = await supabase.from('notes').delete().eq('id', id)
+  const supabase = await createClient()
+  
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) throw new Error('Unauthorized')
+  
+  // Delete only if the note belongs to the current user
+  const { error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+    
   if (error) throw error
   revalidatePath('/notes')
 }
 
 // 📋 Fetch
 export async function getNotes() {
-  const supabase = createAdminClient()
+  const supabase = await createClient()
+  
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) throw new Error('Unauthorized')
+  
   const { data, error } = await supabase
     .from('notes')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
   
   if (error) throw error
