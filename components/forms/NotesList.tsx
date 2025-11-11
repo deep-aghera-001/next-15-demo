@@ -1,11 +1,64 @@
 'use client'
 
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useTransition } from 'react'
-import { deleteNote } from '../../actions/notes'
+import { getNotes, deleteNote } from '@/utils/notes-api-client'
 
-export default function NotesList({ notes }: { notes: any[] }) {
+export interface NotesListHandle {
+  refreshNotes: () => void;
+}
+
+interface NotesListProps {
+  notes?: any[];
+  onNoteDeleted?: () => void;
+}
+
+const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNotes, onNoteDeleted }, ref) => {
+  const [notes, setNotes] = useState<any[]>(propNotes || [])
+  const [loading, setLoading] = useState(!propNotes)
   const [pending, start] = useTransition()
 
+  const fetchNotes = async () => {
+    try {
+      const fetchedNotes = await getNotes()
+      setNotes(fetchedNotes)
+    } catch (error) {
+      console.error('Failed to fetch notes:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Update internal state when props change
+  useEffect(() => {
+    if (propNotes) {
+      setNotes(propNotes)
+      setLoading(false)
+    } else if (!propNotes) {
+      fetchNotes()
+    }
+  }, [propNotes])
+
+  useImperativeHandle(ref, () => ({
+    refreshNotes: fetchNotes
+  }))
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteNote(id.toString())
+      // Remove the deleted note from the state
+      setNotes(notes.filter(note => note.id !== id))
+      // Notify parent if needed
+      if (onNoteDeleted) {
+        onNoteDeleted()
+      }
+    } catch (error) {
+      console.error('Failed to delete note:', error)
+    }
+  }
+
+  // If we have prop notes, don't show loading
+  if (!propNotes && loading) return <p>Loading notes...</p>
   if (notes.length === 0) return <p>No notes yet.</p>
 
   return (
@@ -17,7 +70,7 @@ export default function NotesList({ notes }: { notes: any[] }) {
         >
           <span>{n.note}</span>
           <button
-            onClick={() => start(() => deleteNote(n.id))}
+            onClick={() => start(() => handleDelete(n.id))}
             disabled={pending}
             className="text-red-500 text-sm"
           >
@@ -27,4 +80,8 @@ export default function NotesList({ notes }: { notes: any[] }) {
       ))}
     </ul>
   )
-}
+})
+
+NotesList.displayName = 'NotesList'
+
+export default NotesList

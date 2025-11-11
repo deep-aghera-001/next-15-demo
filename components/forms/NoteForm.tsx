@@ -1,19 +1,34 @@
 'use client'
 
-import { useTransition } from 'react'
-import { createNote } from '../../actions/notes'
+import { useTransition, useState } from 'react'
+import { createNote } from '@/utils/notes-api-client'
 
-export default function NoteForm() {
+export default function NoteForm({ onNoteAdded }: { onNoteAdded?: () => void }) {
   const [pending, start] = useTransition()
+  const [note, setNote] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!note.trim()) return
+    
+    try {
+      await createNote({ note })
+      setNote('')
+      // Notify parent component if needed
+      if (onNoteAdded) {
+        onNoteAdded()
+      }
+    } catch (error) {
+      console.error('Failed to create note:', error)
+    }
+  }
 
   return (
-    <form
-      action={(formData) => start(() => createNote(formData))}
-      className="flex gap-2"
-    >
+    <form onSubmit={handleSubmit} className="flex gap-2">
       <input
         type="text"
-        name="note"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
         placeholder="Write a note..."
         required
         className="flex-1 border rounded px-3 py-2"
