@@ -1,10 +1,8 @@
-import ServerAuthRedirect from '@/components/ServerAuthRedirect'
 import LoginForm from '@/components/forms/LoginForm'
+import { redirectIfAuthenticated } from '@/utils/auth-redirect'
 
-export default function LoginPage() {
-  return (
-    <ServerAuthRedirect redirectTo="/dashboard">
-      <LoginForm />
-    </ServerAuthRedirect>
-  )
+export default async function LoginPage() {
+  await redirectIfAuthenticated('/dashboard')
+  
+  return <LoginForm />
 }
