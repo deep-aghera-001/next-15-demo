@@ -32,6 +32,11 @@ export default function UserNotesManager() {
     fetchNotes()
   }
 
+  const handleNoteUpdated = () => {
+    // Refresh the notes list
+    fetchNotes()
+  }
+
   if (loading) return <p className="text-gray-700">Loading notes...</p>
   
   if (error) {
@@ -66,7 +71,11 @@ export default function UserNotesManager() {
             <p className="text-gray-500 py-4">You haven't created any notes yet.</p>
           ) : (
             <div className="bg-gray-50 rounded-lg p-4">
-              <NotesList notes={notes} onNoteDeleted={fetchNotes} />
+              <NotesList 
+                notes={notes} 
+                onNoteDeleted={fetchNotes} 
+                onNoteUpdated={handleNoteUpdated} 
+              />
             </div>
           )}
         </div>
