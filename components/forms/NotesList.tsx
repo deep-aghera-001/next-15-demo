@@ -63,8 +63,8 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
   }
 
   // If we have prop notes, don't show loading
-  if (!propNotes && loading) return <p>Loading notes...</p>
-  if (notes.length === 0) return <p>No notes yet.</p>
+  if (!propNotes && loading) return <p className="text-gray-700">Loading notes...</p>
+  if (notes.length === 0) return <p className="text-gray-500">No notes yet.</p>
 
   return (
     <div className="space-y-2">
@@ -77,13 +77,13 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
         {notes.map((n) => (
           <li
             key={n.id}
-            className="flex justify-between items-center border-b py-2"
+            className="flex justify-between items-center border-b border-gray-200 py-3 bg-white rounded-md shadow-sm p-3"
           >
-            <span>{n.note}</span>
+            <span className="text-gray-800">{n.note}</span>
             <button
               onClick={() => start(() => handleDelete(n.id))}
               disabled={pending}
-              className="text-red-500 text-sm disabled:opacity-50"
+              className="text-red-500 text-sm hover:text-red-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded"
             >
               {pending ? 'Deleting...' : 'Delete'}
             </button>

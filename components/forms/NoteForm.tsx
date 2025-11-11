@@ -40,12 +40,12 @@ export default function NoteForm({ onNoteAdded }: { onNoteAdded?: () => void }) 
           onChange={(e) => setNote(e.target.value)}
           placeholder="Write a note..."
           required
-          className="flex-1 border rounded px-3 py-2"
+          className="flex-1 border border-gray-300 rounded px-3 py-2 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
         <button
           type="submit"
           disabled={pending}
-          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           {pending ? 'Saving...' : 'Add'}
         </button>

@@ -1,6 +1,7 @@
 import { getDashboardData } from '@/actions/auth'
 import UserProfileManager from '@/components/UserProfileManager'
 import ProtectedDataDisplay from '@/components/ProtectedDataDisplay'
+import UserNotesManager from '@/components/UserNotesManager'
 
 export default async function DashboardPage() {
   const { user } = await getDashboardData()
@@ -28,6 +29,7 @@ export default async function DashboardPage() {
       <div className="py-6">
         <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
           <div className="py-4 space-y-6">
+            <UserNotesManager />
             <UserProfileManager />
             <ProtectedDataDisplay />
           </div>
