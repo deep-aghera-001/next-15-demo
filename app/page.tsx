@@ -1,15 +1,7 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/utils/supabase/server'
+import { getHomePageData } from '@/actions/auth'
 
 export default async function HomePage() {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.auth.getUser()
-  
-  // If user is authenticated, redirect to dashboard
-  if (data?.user && !error) {
-    redirect('/dashboard')
-  }
+  await getHomePageData()
 
   // If not authenticated, show home page
   return (

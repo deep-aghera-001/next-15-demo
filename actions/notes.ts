@@ -19,3 +19,15 @@ export async function deleteNote(id: number) {
   if (error) throw error
   revalidatePath('/notes')
 }
+
+// 📋 Fetch
+export async function getNotes() {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data
+}
