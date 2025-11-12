@@ -52,7 +52,7 @@ export default function UserNotesManager() {
       {!isOnline && (
         <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg">
           <p className="text-sm">
-            You are currently offline. Your notes are cached locally and will sync when you're back online.
+            You are currently offline. Your notes are cached locally and will sync when you&apos;re back online.
           </p>
         </div>
       )}

@@ -16,9 +16,10 @@ export default function NoteAccessManager({ noteId }: { noteId: number }) {
       const users = await getNoteAccessUsers(noteId.toString())
       setAccessUsers(users)
       setError(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch access users:', err)
-      setError(err.message || 'Failed to load access users')
+      const message = err instanceof Error ? err.message : 'Failed to load access users'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -42,9 +43,10 @@ export default function NoteAccessManager({ noteId }: { noteId: number }) {
       await fetchAccessUsers()
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to grant access:', err)
-      setError(err.message || 'Failed to grant access')
+      const message = err instanceof Error ? err.message : 'Failed to grant access'
+      setError(message)
       setSuccess(null)
     } finally {
       setLoading(false)
@@ -61,9 +63,10 @@ export default function NoteAccessManager({ noteId }: { noteId: number }) {
       await fetchAccessUsers()
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to revoke access:', err)
-      setError(err.message || 'Failed to revoke access')
+      const message = err instanceof Error ? err.message : 'Failed to revoke access'
+      setError(message)
       setSuccess(null)
     } finally {
       setLoading(false)

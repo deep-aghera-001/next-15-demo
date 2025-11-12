@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { getNotes } from '@/utils/notes-api-client'
+import { Note } from '@/types/note'
 import NoteForm from '@/components/forms/NoteForm'
 import NotesList, { NotesListHandle } from '@/components/forms/NotesList'
 
 export default function NotesManager() {
-  const [notes, setNotes] = useState<any[]>([])
+  const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const notesListRef = useRef<NotesListHandle>(null)
@@ -14,11 +15,12 @@ export default function NotesManager() {
   const fetchNotes = async () => {
     try {
       const fetchedNotes = await getNotes()
-      setNotes(fetchedNotes)
+      setNotes(fetchedNotes as Note[])
       setError(null)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch notes:', error)
-      setError(error.message || 'Failed to load notes. Please try again.')
+      const message = error instanceof Error ? error.message : 'Failed to load notes. Please try again.'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -28,17 +30,17 @@ export default function NotesManager() {
     fetchNotes()
   }, [])
 
-  const handleNoteAdded = (newNote: any) => {
-    // If it's an optimistic note (temporary ID), add it optimistically
-    // If it's a confirmed note from server, replace the optimistic one
-    if (notesListRef.current) {
-      notesListRef.current.addOptimisticNote(newNote)
+  const handleNoteAdded = (newNote: Note) => {
+    if (newNote.tempId) {
+      setNotes(prev => prev.map(n => (n.id === newNote.tempId ? { ...newNote, tempId: undefined } : n)))
+      return
     }
-    
-    // Handle error notifications
     if (newNote.error) {
+      setNotes(prev => prev.filter(n => n.id !== newNote.id))
       setError('Failed to create note. Please try again.')
+      return
     }
+    setNotes(prev => [newNote, ...prev])
   }
 
   if (loading) return <p>Loading notes...</p>

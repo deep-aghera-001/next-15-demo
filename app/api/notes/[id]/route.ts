@@ -79,9 +79,9 @@ export async function PATCH(
     }
     
     return NextResponse.json(noteWithUser)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in PATCH route:', error)
-    if (error.message === 'Unauthorized') {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -120,8 +120,8 @@ export async function DELETE(
     }
     
     return NextResponse.json({ message: 'Note deleted successfully', note: noteWithUser })
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
