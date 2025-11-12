@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, startTransition } from 'react'
+import { useState, useEffect, useRef, startTransition, useCallback } from 'react'
 import { useOptimistic } from 'react'
 import { getNotes } from '@/utils/notes-api-client'
 import NoteForm from '@/components/forms/NoteForm'
@@ -20,11 +20,28 @@ interface Note {
   [key: string]: any;
 }
 
+// Define pagination type
+interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalNotes: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export default function UserNotesManager() {
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [pagination, setPagination] = useState<Pagination>({
+    currentPage: 1,
+    totalPages: 1,
+    totalNotes: 0,
+    hasNextPage: false,
+    hasPrevPage: false
+  })
   
   // Use useOptimistic hook for optimistic updates
   const [optimisticNotes, addOptimisticNote] = useOptimistic(
@@ -48,8 +65,41 @@ export default function UserNotesManager() {
 
   const supabase = createClient()
 
+  // Fetch notes with proper error handling
+  const fetchNotes = useCallback(async (page: number = 1, search: string = '') => {
+    try {
+      setLoading(true)
+      const response = await getNotes(page, 10, search)
+      
+      // Handle both old and new response formats
+      if (response.notes) {
+        // New format with pagination
+        setNotes(response.notes)
+        setPagination(response.pagination)
+      } else {
+        // Old format without pagination
+        setNotes(response)
+      }
+      
+      setError(null)
+    } catch (error: any) {
+      console.error('Failed to fetch notes:', error)
+      setError(error.message || 'Failed to load notes. Please try again.')
+      // Reset pagination on error
+      setPagination({
+        currentPage: 1,
+        totalPages: 1,
+        totalNotes: 0,
+        hasNextPage: false,
+        hasPrevPage: false
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Get current user on component mount
   useEffect(() => {
-    // Get current user
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -60,23 +110,28 @@ export default function UserNotesManager() {
     fetchUser()
   }, [])
 
-  const fetchNotes = async () => {
-    try {
-      const fetchedNotes = await getNotes()
-      setNotes(fetchedNotes)
-      setError(null)
-    } catch (error: any) {
-      console.error('Failed to fetch notes:', error)
-      setError(error.message || 'Failed to load notes. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Handle search with debounce and pagination reset
   useEffect(() => {
-    fetchNotes()
-    
-    // Subscribe to real-time updates
+    const handler = setTimeout(() => {
+      // Always reset to page 1 when search query changes
+      fetchNotes(1, searchQuery)
+    }, 500)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchQuery, fetchNotes])
+
+  // Handle pagination changes
+  useEffect(() => {
+    // Only fetch when not triggered by search (which already fetches)
+    if (searchQuery === '') {
+      fetchNotes(pagination.currentPage, '')
+    }
+  }, [pagination.currentPage, searchQuery, fetchNotes])
+
+  // Set up real-time subscription
+  useEffect(() => {
     const channel = supabase
       .channel('user-notes-changes')
       .on(
@@ -87,9 +142,8 @@ export default function UserNotesManager() {
           table: 'notes'
         },
         (payload) => {
-          // For real-time updates, we need to refetch all notes to ensure
-          // we have the correct user information for each note
-          fetchNotes()
+          // Refetch current page with current search query
+          fetchNotes(pagination.currentPage, searchQuery)
         }
       )
       .subscribe()
@@ -98,7 +152,7 @@ export default function UserNotesManager() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [supabase, pagination.currentPage, searchQuery, fetchNotes])
 
   const handleNoteAdded = (newNote: Note) => {
     // Set optimistic note using the useOptimistic hook
@@ -133,15 +187,25 @@ export default function UserNotesManager() {
 
   const handleNoteUpdated = () => {
     // Refresh the notes list
-    fetchNotes()
+    fetchNotes(pagination.currentPage, searchQuery)
   }
 
   const handleNoteDeleted = () => {
     // Refresh the notes list
-    fetchNotes()
+    fetchNotes(pagination.currentPage, searchQuery)
   }
 
-  if (loading) return <p className="text-gray-700">Loading notes...</p>
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, currentPage: newPage }))
+  }
+
+  const handleRetry = () => {
+    setError(null)
+    fetchNotes(pagination.currentPage, searchQuery)
+  }
+
+  // Show loading only for initial load
+  const showLoading = loading && notes.length === 0;
   
   return (
     <div className="bg-white shadow rounded-lg p-6">
@@ -149,14 +213,22 @@ export default function UserNotesManager() {
         <h2 className="text-xl font-bold text-gray-800">My Notes</h2>
       </div>
       
+      {/* Search Input with visible text */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search notes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
+        />
+      </div>
+      
       {error && (
         <div className="text-red-500 p-4 bg-red-50 rounded mb-4">
           <p>Error: {error}</p>
           <button 
-            onClick={() => {
-              setError(null)
-              fetchNotes()
-            }}
+            onClick={handleRetry}
             className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Retry
@@ -167,14 +239,51 @@ export default function UserNotesManager() {
       <NoteForm onNoteAdded={handleNoteAdded} />
       
       <div className="mt-6">
-        <NotesList 
-          ref={notesListRef}
-          notes={optimisticNotes} 
-          onNoteDeleted={handleNoteDeleted} 
-          onNoteUpdated={handleNoteUpdated}
-          currentUserId={currentUserId || undefined}
-        />
+        {showLoading ? (
+          <p className="text-gray-700">Loading notes...</p>
+        ) : (
+          <NotesList 
+            ref={notesListRef}
+            notes={optimisticNotes} 
+            onNoteDeleted={handleNoteDeleted} 
+            onNoteUpdated={handleNoteUpdated}
+            currentUserId={currentUserId || undefined}
+          />
+        )}
       </div>
+      
+      {/* Pagination Controls */}
+      {!loading && pagination.totalPages > 1 && (
+        <div className="mt-6 flex justify-between items-center">
+          <button
+            onClick={() => handlePageChange(pagination.currentPage - 1)}
+            disabled={!pagination.hasPrevPage}
+            className={`px-4 py-2 rounded ${
+              pagination.hasPrevPage 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Previous
+          </button>
+          
+          <span className="text-gray-700">
+            Page {pagination.currentPage} of {pagination.totalPages}
+          </span>
+          
+          <button
+            onClick={() => handlePageChange(pagination.currentPage + 1)}
+            disabled={!pagination.hasNextPage}
+            className={`px-4 py-2 rounded ${
+              pagination.hasNextPage 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   )
 }

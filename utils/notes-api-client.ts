@@ -1,7 +1,15 @@
 // Utility functions for calling our notes API routes from client components
 
-export async function getNotes() {
-  const response = await fetch('/api/notes', {
+export async function getNotes(page: number = 1, limit: number = 10, searchQuery: string = '') {
+  const params = new URLSearchParams();
+  params.append('page', page.toString());
+  params.append('limit', limit.toString());
+  
+  if (searchQuery) {
+    params.append('search', searchQuery);
+  }
+
+  const response = await fetch(`/api/notes?${params.toString()}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

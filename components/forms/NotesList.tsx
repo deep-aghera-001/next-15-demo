@@ -38,8 +38,15 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
 
   const fetchNotes = async () => {
     try {
-      const fetchedNotes = await getNotes()
-      setNotes(fetchedNotes)
+      const response = await getNotes(1, 10, '')
+      // Handle both old and new response formats
+      if (response.notes) {
+        // New format with pagination
+        setNotes(response.notes)
+      } else {
+        // Old format without pagination
+        setNotes(response)
+      }
       setError(null)
     } catch (error: any) {
       console.error('Failed to fetch notes:', error)

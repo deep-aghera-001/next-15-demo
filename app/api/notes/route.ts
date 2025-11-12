@@ -25,18 +25,36 @@ async function getUserIdAndEmail() {
   return { userId: user.id, userEmail: user.email }
 }
 
-// GET /api/notes - Get all notes
+// GET /api/notes - Get all notes with pagination and search
 export async function GET(request: NextRequest) {
   try {
-    await getUserIdAndEmail()
+    const { userId, userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     const adminSupabase = createAdminClient()
     
-    // Get ALL notes
-    const { data: notes, error: notesError } = await supabase
+    // Get query parameters
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '10', 10)
+    const searchQuery = searchParams.get('search') || ''
+    
+    // Calculate offset
+    const offset = (page - 1) * limit
+    
+    // Build the query
+    let query = supabase
       .from('notes')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+    
+    // Add search filter if query exists
+    if (searchQuery) {
+      query = query.ilike('note', `%${searchQuery}%`)
+    }
+    
+    // Execute the query
+    const { data: notes, error: notesError, count } = await query
     
     if (notesError) {
       return NextResponse.json({ error: notesError.message }, { status: 500 })
@@ -58,7 +76,19 @@ export async function GET(request: NextRequest) {
       user: { email: userMap.get(note.user_id) || 'Unknown User' }
     }))
     
-    return NextResponse.json(notesWithUser)
+    // Calculate pagination info
+    const totalPages = Math.ceil((count || 0) / limit)
+    
+    return NextResponse.json({
+      notes: notesWithUser,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalNotes: count || 0,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    })
   } catch (error: any) {
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
