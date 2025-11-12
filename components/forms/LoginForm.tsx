@@ -1,42 +1,44 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { signup, signUpWithGitHub, signUpWithGoogle } from './actions'
+import { login, signInWithGitHub, signInWithGoogle } from '../../actions/login'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 type FormState = {
   error?: string
-  success?: boolean
 } | null
 
-export default function SignupForm() {
-  const [state, formAction] = useActionState(signup, null)
+export default function LoginForm() {
+  const [state, formAction] = useActionState(login, null)
+  const searchParams = useSearchParams()
+  const message = searchParams.get('message')
   const [isGitHubLoading, setIsGitHubLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
-  const handleGitHubSignup = async () => {
+  const handleGitHubLogin = async () => {
     setIsGitHubLoading(true)
     try {
-      const result = await signUpWithGitHub()
+      const result = await signInWithGitHub()
       if (result?.error) {
-        console.error('GitHub signup error:', result.error)
+        console.error('GitHub login error:', result.error)
       }
     } catch (error) {
-      console.error('GitHub signup error:', error)
+      console.error('GitHub login error:', error)
     } finally {
       setIsGitHubLoading(false)
     }
   }
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleLogin = async () => {
     setIsGoogleLoading(true)
     try {
-      const result = await signUpWithGoogle()
+      const result = await signInWithGoogle()
       if (result?.error) {
-        console.error('Google signup error:', result.error)
+        console.error('Google login error:', result.error)
       }
     } catch (error) {
-      console.error('Google signup error:', error)
+      console.error('Google login error:', error)
     } finally {
       setIsGoogleLoading(false)
     }
@@ -45,7 +47,12 @@ export default function SignupForm() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center text-gray-900">Sign Up</h1>
+        <h1 className="text-2xl font-bold text-center text-gray-900">Login</h1>
+        {message && (
+          <div className="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">
+            {message}
+          </div>
+        )}
         <form action={formAction} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -68,21 +75,17 @@ export default function SignupForm() {
               name="password"
               type="password"
               required
-              minLength={6}
               className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
             />
           </div>
           <button
             type="submit"
-            className="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Sign Up
+            Login
           </button>
           {state?.error && (
             <p className="text-sm text-red-600">{state.error}</p>
-          )}
-          {state?.success && (
-            <p className="text-sm text-green-600">Account created successfully! Please check your email for confirmation.</p>
           )}
         </form>
 
@@ -101,7 +104,7 @@ export default function SignupForm() {
 
           <div className="mt-6 grid grid-cols-2 gap-3">
             <button
-              onClick={handleGitHubSignup}
+              onClick={handleGitHubLogin}
               disabled={isGitHubLoading}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
@@ -124,7 +127,7 @@ export default function SignupForm() {
             </button>
 
             <button
-              onClick={handleGoogleSignup}
+              onClick={handleGoogleLogin}
               disabled={isGoogleLoading}
               className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
@@ -150,11 +153,17 @@ export default function SignupForm() {
 
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Log in
+            Don't have an account?{' '}
+            <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Sign up
             </Link>
           </p>
+        </div>
+        
+        <div className="text-center mt-4">
+          <Link href="/reset-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+            Forgot your password?
+          </Link>
         </div>
       </div>
     </div>
