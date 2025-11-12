@@ -121,6 +121,16 @@ class OfflineSyncService {
       console.error('Failed to update cached note:', err)
     }
   }
+
+  // Clear all cached data for security purposes
+  clearAllCachedData(): void {
+    try {
+      localStorage.removeItem('notes_cache')
+      localStorage.removeItem(this.STORAGE_KEY)
+    } catch (err) {
+      console.error('Failed to clear cached data:', err)
+    }
+  }
 }
 
 // Export singleton instance
