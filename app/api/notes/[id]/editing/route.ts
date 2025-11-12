@@ -42,7 +42,7 @@ export async function POST(
     }
     
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in editing route:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
