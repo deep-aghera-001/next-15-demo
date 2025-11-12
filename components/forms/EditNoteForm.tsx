@@ -2,6 +2,7 @@
 
 import { useTransition, useState, useEffect } from 'react'
 import { updateNote } from '@/utils/notes-api-client'
+import { toggleNoteEditingState } from '@/utils/toggle-editing-state'
 
 export default function EditNoteForm({ 
   noteId, 
@@ -26,6 +27,16 @@ export default function EditNoteForm({
     setNote(initialNote)
     setVersion(initialVersion)
   }, [initialNote, initialVersion])
+
+  // Set editing state when component mounts
+  useEffect(() => {
+    toggleNoteEditingState(noteId.toString(), true).catch(console.error)
+    
+    // Clear editing state when component unmounts
+    return () => {
+      toggleNoteEditingState(noteId.toString(), false).catch(console.error)
+    }
+  }, [noteId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -9,7 +9,8 @@ interface Note {
   user_id: string;
   note: string;
   created_at: string;
-  version: number;  // Add version to the interface
+  version: number;
+  being_edited?: boolean;
   user?: {
     email: string;
   };
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
         ...noteData,
         user_id: userId,
         created_at: new Date().toISOString(),
-        version: 1  // Add version to new notes
+        version: 1
       })
       .select()
     

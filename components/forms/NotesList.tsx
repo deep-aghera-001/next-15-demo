@@ -15,6 +15,7 @@ interface Note {
   note: string;
   created_at: string;
   version?: number;
+  being_edited?: boolean;
   user?: {
     email: string;
   };
@@ -169,13 +170,21 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
           ) : (
             <>
               <div className="flex justify-between items-start">
-                <p className="text-gray-800">{note.note}</p>
+                <div className="flex-1">
+                  <p className="text-gray-800">{note.note}</p>
+                  {note.being_edited && editingNoteId !== note.id && (
+                    <div className="text-sm text-blue-600 bg-blue-50 p-1 rounded mt-1 inline-block">
+                      Someone is editing this note...
+                    </div>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   {typeof note.id === 'number' && (
                     <>
                       <button
                         onClick={() => startEditing(note.id)}
                         className="text-blue-600 hover:text-blue-800"
+                        disabled={note.being_edited && editingNoteId !== note.id}
                       >
                         Edit
                       </button>
