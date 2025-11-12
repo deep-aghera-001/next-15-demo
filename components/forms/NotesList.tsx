@@ -37,9 +37,10 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
         setNotes(response)
       }
       setError(null)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch notes:', error)
-      setError(error.message || 'Failed to load notes. Please try again.')
+      const message = error instanceof Error ? error.message : 'Failed to load notes. Please try again.'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -74,15 +75,16 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
       if (onNoteDeleted) {
         onNoteDeleted()
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to delete note:', error)
-      setError(error.message || 'Failed to delete note. Please try again.')
+      const message = error instanceof Error ? error.message : 'Failed to delete note. Please try again.'
+      setError(message)
       // Revert optimistic update on error
       fetchNotes()
     }
   }
 
-  const handleUpdate = (updatedNoteData?: any) => {
+  const handleUpdate = (updatedNoteData?: Partial<Note> & { conflict?: boolean }) => {
     // If this is a conflict notification, set a specific error message
     if (updatedNoteData && updatedNoteData.error && updatedNoteData.conflict) {
       setError('This note was modified by another user. Please refresh the page to get the latest version.')
@@ -96,7 +98,7 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
       // Handle optimistic update - update the note text immediately
       setNotes(prevNotes => 
         prevNotes.map(note => 
-          note.id === editingNoteId ? { ...note, note: updatedNoteData.note } : note
+          note.id === editingNoteId ? { ...note, note: updatedNoteData.note! } : note
         )
       )
     }

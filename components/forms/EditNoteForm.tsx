@@ -2,6 +2,7 @@
 
 import { useTransition, useState, useEffect, useRef } from 'react'
 import { updateNote } from '@/utils/notes-api-client'
+import { Note } from '@/types/note'
 import { toggleNoteEditingState } from '@/utils/toggle-editing-state'
 
 export default function EditNoteForm({ 
@@ -14,7 +15,7 @@ export default function EditNoteForm({
   noteId: number; 
   initialNote: string; 
   initialVersion: number;
-  onNoteUpdated: (updatedNote?: any) => void; 
+  onNoteUpdated: (updatedNote?: Partial<Note> & { conflict?: boolean }) => void; 
   onCancel: () => void 
 }) {
   const [pending, start] = useTransition()
@@ -99,18 +100,18 @@ export default function EditNoteForm({
       setError(null)
       // Update version for next edit
       setVersion(savedNote.version)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update note:', error)
       
-      // Handle conflict specifically
-      if (error.message && error.message.startsWith('CONFLICT:')) {
+      if (error instanceof Error && error.message.startsWith('CONFLICT:')) {
         setError('This note was modified by another user. Please refresh the page to get the latest version.')
         // Notify parent of the conflict
         if (onNoteUpdated) {
           onNoteUpdated({ error: true, conflict: true })
         }
       } else {
-        setError(error.message || 'Failed to update note. Please try again.')
+        const message = error instanceof Error ? error.message : 'Failed to update note. Please try again.'
+        setError(message)
         // Revert to initial note on error and notify parent of the error
         if (onNoteUpdated) {
           onNoteUpdated({ note: initialNote, error: true })

@@ -56,7 +56,7 @@ export async function GET(
     }
     
     // Filter to only users who have access
-    const accessUserIds = accessRecords.map((record: any) => record.user_id)
+    const accessUserIds = (accessRecords as Array<{ user_id: string }>).map(record => record.user_id)
     const accessUsers = users.users
       .filter(u => accessUserIds.includes(u.id))
       .map(u => ({
@@ -65,8 +65,8 @@ export async function GET(
       }))
       
     return NextResponse.json(accessUsers)
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -126,53 +126,8 @@ export async function POST(
     }
     
     return NextResponse.json({ message: 'Access granted successfully' })
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-// DELETE /api/notes/[id]/access/[userId] - Revoke access to a note for a user
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; userId: string }> }
-) {
-  try {
-    const resolvedParams = await params;
-    const { userId } = await getUserIdAndEmail()
-    const supabase = await createClient()
-    
-    // Verify that the current user owns the note
-    const { data: note, error: noteError } = await supabase
-      .from('notes')
-      .select('user_id')
-      .eq('id', resolvedParams.id)
-      .single()
-      
-    if (noteError || !note) {
-      return NextResponse.json({ error: 'Note not found' }, { status: 404 })
-    }
-    
-    if (note.user_id !== userId) {
-      return NextResponse.json({ error: 'Unauthorized: You do not own this note' }, { status: 403 })
-    }
-    
-    // Revoke access by deleting from note_access table
-    const { error: deleteError } = await supabase
-      .from('note_access')
-      .delete()
-      .eq('note_id', resolvedParams.id)
-      .eq('user_id', resolvedParams.userId)
-      
-    if (deleteError) {
-      return NextResponse.json({ error: deleteError.message }, { status: 500 })
-    }
-    
-    return NextResponse.json({ message: 'Access revoked successfully' })
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
