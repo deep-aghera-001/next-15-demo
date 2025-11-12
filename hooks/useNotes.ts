@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getNotes, createNote, updateNote, deleteNote } from '@/utils/notes-api-client'
+import offlineSyncService from '@/utils/offline-sync-service'
 
 // Define the Note type
 interface Note {
@@ -48,8 +49,59 @@ export function useNotes({
     hasPrevPage: false
   })
 
+  // Storage keys
+  const NOTES_CACHE_KEY = 'notes_cache'
+
+  // Load cached notes from localStorage
+  useEffect(() => {
+    const loadFromCache = () => {
+      try {
+        const cachedNotes = localStorage.getItem(NOTES_CACHE_KEY)
+        if (cachedNotes) {
+          setNotes(JSON.parse(cachedNotes))
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('Failed to load cached notes:', err)
+      }
+    }
+
+    // Load cached data immediately if offline
+    if (!navigator.onLine) {
+      loadFromCache()
+    }
+  }, [])
+
+  // Save notes to cache whenever they change
+  useEffect(() => {
+    if (notes.length > 0) {
+      try {
+        localStorage.setItem(NOTES_CACHE_KEY, JSON.stringify(notes))
+      } catch (err) {
+        console.error('Failed to cache notes:', err)
+      }
+    }
+  }, [notes])
+
   // Fetch notes with proper error handling
   const fetchNotes = useCallback(async (page: number = initialPage, search: string = initialSearchQuery) => {
+    // If offline, try to load from cache
+    if (!navigator.onLine) {
+      try {
+        const cachedNotes = localStorage.getItem(NOTES_CACHE_KEY)
+        if (cachedNotes) {
+          setNotes(JSON.parse(cachedNotes))
+          setError(null)
+          setLoading(false)
+          return
+        }
+      } catch (err) {
+        console.error('Failed to load cached notes:', err)
+      }
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       const response = await getNotes(page, limit, search)
@@ -132,8 +184,31 @@ export function useNotes({
     setNotes(prevNotes => [newNote, ...prevNotes])
   }
 
-  // CRUD operations
+  // CRUD operations with offline support
   const createNewNote = async (noteData: { note: string }) => {
+    // If offline, queue the operation
+    if (!navigator.onLine) {
+      const tempId = `temp_${Date.now()}`
+      const tempNote = {
+        id: tempId,
+        ...noteData,
+        created_at: new Date().toISOString(),
+        tempId
+      }
+      
+      // Add to UI immediately
+      setNotes(prevNotes => [tempNote, ...prevNotes])
+      
+      // Queue for later sync
+      offlineSyncService.queueOperation({
+        id: tempId,
+        type: 'create',
+        data: noteData
+      })
+      
+      return tempNote
+    }
+    
     try {
       const newNote = await createNote(noteData)
       // Add to the beginning of the list
@@ -146,6 +221,25 @@ export function useNotes({
   }
 
   const updateExistingNote = async (id: string, noteData: { note: string, version: number }) => {
+    // If offline, queue the operation
+    if (!navigator.onLine) {
+      // Update UI immediately
+      setNotes(prevNotes => 
+        prevNotes.map(note => 
+          note.id === id ? { ...note, ...noteData, updated_at: new Date().toISOString() } : note
+        )
+      )
+      
+      // Queue for later sync
+      offlineSyncService.queueOperation({
+        id,
+        type: 'update',
+        data: noteData
+      })
+      
+      return { id, ...noteData }
+    }
+    
     try {
       const updatedNote = await updateNote(id, noteData)
       // Update the note in the list
@@ -162,6 +256,21 @@ export function useNotes({
   }
 
   const deleteExistingNote = async (id: string) => {
+    // If offline, queue the operation
+    if (!navigator.onLine) {
+      // Remove from UI immediately
+      setNotes(prevNotes => prevNotes.filter(note => note.id !== id))
+      
+      // Queue for later sync
+      offlineSyncService.queueOperation({
+        id,
+        type: 'delete',
+        data: {}
+      })
+      
+      return { id }
+    }
+    
     try {
       await deleteNote(id)
       // Remove the note from the list
@@ -179,6 +288,7 @@ export function useNotes({
     loading,
     error,
     searchQuery,
+    isOnline: navigator.onLine,
     
     // Functions
     fetchNotes,

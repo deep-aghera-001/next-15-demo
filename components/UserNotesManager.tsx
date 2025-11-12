@@ -15,6 +15,7 @@ export default function UserNotesManager() {
     error,
     searchQuery,
     pagination,
+    isOnline,
     setSearchQuery,
     handlePageChange,
     handleRetry,
@@ -38,7 +39,23 @@ export default function UserNotesManager() {
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">My Notes</h2>
+        {/* Offline indicator */}
+        {!isOnline && (
+          <div className="flex items-center bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
+            <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+            <span className="text-sm font-medium">Offline</span>
+          </div>
+        )}
       </div>
+      
+      {/* Offline message */}
+      {!isOnline && (
+        <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg">
+          <p className="text-sm">
+            You are currently offline. Your notes are cached locally and will sync when you're back online.
+          </p>
+        </div>
+      )}
       
       {/* Search Input with visible text */}
       <div className="mb-6">
@@ -48,6 +65,7 @@ export default function UserNotesManager() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
+          disabled={!isOnline && notes.length === 0}
         />
       </div>
       
@@ -83,9 +101,9 @@ export default function UserNotesManager() {
         <div className="mt-6 flex justify-between items-center">
           <button
             onClick={() => handlePageChange(pagination.currentPage - 1)}
-            disabled={!pagination.hasPrevPage}
+            disabled={!pagination.hasPrevPage || !isOnline}
             className={`px-4 py-2 rounded ${
-              pagination.hasPrevPage 
+              pagination.hasPrevPage && isOnline
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
@@ -99,9 +117,9 @@ export default function UserNotesManager() {
           
           <button
             onClick={() => handlePageChange(pagination.currentPage + 1)}
-            disabled={!pagination.hasNextPage}
+            disabled={!pagination.hasNextPage || !isOnline}
             className={`px-4 py-2 rounded ${
-              pagination.hasNextPage 
+              pagination.hasNextPage && isOnline
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
