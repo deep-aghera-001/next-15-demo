@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef, startTransition, useCallback } from 'react'
-import { useOptimistic } from 'react'
-import { getNotes } from '@/utils/notes-api-client'
+import { useState, useEffect, useRef } from 'react'
 import NoteForm from '@/components/forms/NoteForm'
 import NotesList, { NotesListHandle } from '@/components/forms/NotesList'
+import { useNotes } from '@/hooks/useNotes'
+import { useRealtimeNotes } from '@/hooks/useRealtimeNotes'
 import { createClient } from '@/utils/supabase/client'
 
 // Define the Note type
@@ -20,83 +20,25 @@ interface Note {
   [key: string]: any;
 }
 
-// Define pagination type
-interface Pagination {
-  currentPage: number;
-  totalPages: number;
-  totalNotes: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
-
 export default function UserNotesManager() {
-  const [notes, setNotes] = useState<Note[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [pagination, setPagination] = useState<Pagination>({
-    currentPage: 1,
-    totalPages: 1,
-    totalNotes: 0,
-    hasNextPage: false,
-    hasPrevPage: false
-  })
   
-  // Use useOptimistic hook for optimistic updates
-  const [optimisticNotes, addOptimisticNote] = useOptimistic(
+  // Use our custom hooks for data fetching and state management
+  const {
     notes,
-    (state: Note[], newNote: Note) => {
-      // If this is to remove an optimistic note due to error
-      if (newNote.error) {
-        return state.filter(note => note.id !== newNote.id)
-      }
-      // If this is a replacement for an optimistic note, replace it
-      if (newNote.tempId) {
-        return state.map(note => 
-          note.id === newNote.tempId ? { ...newNote, id: newNote.id } : note
-        )
-      }
-      // Otherwise, add the new note to the beginning of the list
-      return [newNote, ...state]
-    }
-  )
+    loading,
+    error,
+    searchQuery,
+    pagination,
+    setSearchQuery,
+    handlePageChange,
+    handleRetry,
+    fetchNotes,
+    addOptimisticNote
+  } = useNotes({ limit: 10 })
+  
   const notesListRef = useRef<NotesListHandle>(null)
-
   const supabase = createClient()
-
-  // Fetch notes with proper error handling
-  const fetchNotes = useCallback(async (page: number = 1, search: string = '') => {
-    try {
-      setLoading(true)
-      const response = await getNotes(page, 10, search)
-      
-      // Handle both old and new response formats
-      if (response.notes) {
-        // New format with pagination
-        setNotes(response.notes)
-        setPagination(response.pagination)
-      } else {
-        // Old format without pagination
-        setNotes(response)
-      }
-      
-      setError(null)
-    } catch (error: any) {
-      console.error('Failed to fetch notes:', error)
-      setError(error.message || 'Failed to load notes. Please try again.')
-      // Reset pagination on error
-      setPagination({
-        currentPage: 1,
-        totalPages: 1,
-        totalNotes: 0,
-        hasNextPage: false,
-        hasPrevPage: false
-      })
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   // Get current user on component mount
   useEffect(() => {
@@ -110,79 +52,16 @@ export default function UserNotesManager() {
     fetchUser()
   }, [])
 
-  // Handle search with debounce and pagination reset
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      // Always reset to page 1 when search query changes
-      fetchNotes(1, searchQuery)
-    }, 500)
-
-    return () => {
-      clearTimeout(handler)
-    }
-  }, [searchQuery, fetchNotes])
-
-  // Handle pagination changes
-  useEffect(() => {
-    // Only fetch when not triggered by search (which already fetches)
-    if (searchQuery === '') {
-      fetchNotes(pagination.currentPage, '')
-    }
-  }, [pagination.currentPage, searchQuery, fetchNotes])
-
-  // Set up real-time subscription
-  useEffect(() => {
-    const channel = supabase
-      .channel('user-notes-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notes'
-        },
-        (payload) => {
-          // Refetch current page with current search query
-          fetchNotes(pagination.currentPage, searchQuery)
-        }
-      )
-      .subscribe()
-
-    // Clean up subscription
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [supabase, pagination.currentPage, searchQuery, fetchNotes])
+  // Set up real-time subscription using our custom hook
+  useRealtimeNotes({
+    onNoteChange: () => fetchNotes(pagination.currentPage, searchQuery),
+    currentPage: pagination.currentPage,
+    searchQuery
+  })
 
   const handleNoteAdded = (newNote: Note) => {
-    // Set optimistic note using the useOptimistic hook
-    startTransition(() => {
-      addOptimisticNote(newNote)
-    })
-    
-    // If this is a confirmed note from the server (has a real ID), 
-    // and it has a tempId, it's replacing an optimistic note
-    if (newNote.id && typeof newNote.id === 'number' && newNote.tempId) {
-      // Update the actual notes state as well
-      setNotes(prevNotes => 
-        prevNotes.map(note => 
-          note.id === newNote.tempId ? { ...newNote, id: newNote.id } : note
-        )
-      )
-      return
-    }
-    
-    // If this is an error notification for an optimistic note, 
-    // display the error to the user
-    if (newNote.error) {
-      setError('Failed to create note. Please try again.')
-      return
-    }
-    
-    // If this is a new optimistic note, add it to our state too
-    if (newNote.id && newNote.id.toString().startsWith('optimistic_')) {
-      setNotes(prevNotes => [newNote, ...prevNotes])
-    }
+    // Handle optimistic note using the hook function
+    addOptimisticNote(newNote)
   }
 
   const handleNoteUpdated = () => {
@@ -192,15 +71,6 @@ export default function UserNotesManager() {
 
   const handleNoteDeleted = () => {
     // Refresh the notes list
-    fetchNotes(pagination.currentPage, searchQuery)
-  }
-
-  const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, currentPage: newPage }))
-  }
-
-  const handleRetry = () => {
-    setError(null)
     fetchNotes(pagination.currentPage, searchQuery)
   }
 
@@ -244,7 +114,7 @@ export default function UserNotesManager() {
         ) : (
           <NotesList 
             ref={notesListRef}
-            notes={optimisticNotes} 
+            notes={notes} 
             onNoteDeleted={handleNoteDeleted} 
             onNoteUpdated={handleNoteUpdated}
             currentUserId={currentUserId || undefined}
