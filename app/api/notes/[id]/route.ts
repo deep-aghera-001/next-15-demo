@@ -32,6 +32,7 @@ export async function PATCH(
       .single()
     
     if (fetchError) {
+      console.error('Error fetching note:', fetchError)
       return NextResponse.json({ error: fetchError.message }, { status: 500 })
     }
     
@@ -63,6 +64,7 @@ export async function PATCH(
       if (error.code === '23505') { // unique_violation
         return NextResponse.json({ error: 'Note was modified by another user. Please try again.' }, { status: 409 })
       }
+      console.error('Error updating note:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     
@@ -78,6 +80,7 @@ export async function PATCH(
     
     return NextResponse.json(noteWithUser)
   } catch (error: any) {
+    console.error('Error in PATCH route:', error)
     if (error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

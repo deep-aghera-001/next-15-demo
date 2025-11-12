@@ -44,27 +44,32 @@ export async function createNote(noteData: { note: string }) {
 }
 
 export async function updateNote(id: string, noteData: { note: string, version: number }) {
-  const response = await fetch(`/api/notes/${id}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(noteData),
-  })
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const errorMessage = errorData.error || 'Failed to update note. Please try again.';
+  try {
+    const response = await fetch(`/api/notes/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(noteData),
+    })
     
-    // Handle conflict specifically
-    if (response.status === 409 && errorData.conflict) {
-      throw new Error('CONFLICT: ' + errorMessage);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || 'Failed to update note. Please try again.';
+      
+      // Handle conflict specifically
+      if (response.status === 409 && errorData.conflict) {
+        throw new Error('CONFLICT: ' + errorMessage);
+      }
+      
+      throw new Error(errorMessage);
     }
     
-    throw new Error(errorMessage);
+    return response.json()
+  } catch (error) {
+    console.error('Error in updateNote:', error)
+    throw error
   }
-  
-  return response.json()
 }
 
 export async function deleteNote(id: string) {
