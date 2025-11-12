@@ -14,6 +14,7 @@ interface Note {
   id: string | number;
   note: string;
   created_at: string;
+  version?: number;
   user?: {
     email: string;
   };
@@ -86,11 +87,25 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
   }
 
   const handleUpdate = (updatedNoteData?: any) => {
-    // If this is an error notification, set the error state
-    if (updatedNoteData && updatedNoteData.error) {
+    // If this is a conflict notification, set a specific error message
+    if (updatedNoteData && updatedNoteData.error && updatedNoteData.conflict) {
+      setError('This note was modified by another user. Please refresh the page to get the latest version.')
+    }
+    // If this is a general error notification, set the error state
+    else if (updatedNoteData && updatedNoteData.error) {
       setError('Failed to update note. Please try again.')
-    } else {
-      // Normal update flow
+    }
+    // If this is an optimistic update (contains note text), update the notes state
+    else if (updatedNoteData && updatedNoteData.note && !updatedNoteData.id) {
+      // Handle optimistic update - update the note text immediately
+      setNotes(prevNotes => 
+        prevNotes.map(note => 
+          note.id === editingNoteId ? { ...note, note: updatedNoteData.note } : note
+        )
+      )
+    }
+    // Normal update flow - close the edit form and refresh
+    else {
       setEditingNoteId(null)
       setSharingNoteId(null)
       if (onNoteUpdated) {
@@ -134,12 +149,13 @@ const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNote
           </button>
         </div>
       )}
-      {notes.map((note) => (
-        <div key={note.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+      {notes.map((note, index) => (
+        <div key={`${note.id}-${index}-${note.created_at || Date.now()}`} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
           {editingNoteId === note.id ? (
             <EditNoteForm
               noteId={typeof note.id === 'number' ? note.id : 0}
               initialNote={note.note}
+              initialVersion={note.version || 1}
               onNoteUpdated={handleUpdate}
               onCancel={cancelEditing}
             />

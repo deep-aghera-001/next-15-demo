@@ -24,14 +24,45 @@ export async function PATCH(
     
     const noteData = await request.json()
     
-    // Update the note - database policies will enforce access control
+    // Get the current version of the note from the database
+    const { data: currentNote, error: fetchError } = await supabase
+      .from('notes')
+      .select('version')
+      .eq('id', resolvedParams.id)
+      .single()
+    
+    if (fetchError) {
+      return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    }
+    
+    if (!currentNote) {
+      return NextResponse.json({ error: 'Note not found or unauthorized' }, { status: 404 })
+    }
+    
+    // Check if the version in the request matches the current version
+    const clientVersion = noteData.version || 1
+    if (clientVersion !== currentNote.version) {
+      return NextResponse.json({ 
+        error: 'Note has been modified by another user. Please refresh and try again.',
+        conflict: true 
+      }, { status: 409 })
+    }
+    
+    // Update the note with incremented version - database policies will enforce access control
     const { data, error } = await supabase
       .from('notes')
-      .update(noteData)
+      .update({
+        ...noteData,
+        version: currentNote.version + 1
+      })
       .eq('id', resolvedParams.id)
       .select()
     
     if (error) {
+      // Handle specific database errors
+      if (error.code === '23505') { // unique_violation
+        return NextResponse.json({ error: 'Note was modified by another user. Please try again.' }, { status: 409 })
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     

@@ -6,22 +6,26 @@ import { updateNote } from '@/utils/notes-api-client'
 export default function EditNoteForm({ 
   noteId, 
   initialNote, 
+  initialVersion,
   onNoteUpdated, 
   onCancel 
 }: { 
   noteId: number; 
   initialNote: string; 
+  initialVersion: number;
   onNoteUpdated: (updatedNote?: any) => void; 
   onCancel: () => void 
 }) {
   const [pending, start] = useTransition()
   const [note, setNote] = useState(initialNote)
   const [error, setError] = useState<string | null>(null)
+  const [version, setVersion] = useState(initialVersion)
 
   // Update local state when initialNote changes
   useEffect(() => {
     setNote(initialNote)
-  }, [initialNote])
+    setVersion(initialVersion)
+  }, [initialNote, initialVersion])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,19 +39,31 @@ export default function EditNoteForm({
     }
     
     try {
-      const savedNote = await updateNote(noteId.toString(), { note: note.trim() })
+      const savedNote = await updateNote(noteId.toString(), { note: note.trim(), version })
       // Update with actual data from server
       if (onNoteUpdated) {
         onNoteUpdated(savedNote)
       }
       // Clear any previous error state
       setError(null)
+      // Update version for next edit
+      setVersion(savedNote.version)
     } catch (error: any) {
       console.error('Failed to update note:', error)
-      setError(error.message || 'Failed to update note. Please try again.')
-      // Revert to initial note on error and notify parent of the error
-      if (onNoteUpdated) {
-        onNoteUpdated({ note: initialNote, error: true })
+      
+      // Handle conflict specifically
+      if (error.message && error.message.startsWith('CONFLICT:')) {
+        setError('This note was modified by another user. Please refresh the page to get the latest version.')
+        // Notify parent of the conflict
+        if (onNoteUpdated) {
+          onNoteUpdated({ error: true, conflict: true })
+        }
+      } else {
+        setError(error.message || 'Failed to update note. Please try again.')
+        // Revert to initial note on error and notify parent of the error
+        if (onNoteUpdated) {
+          onNoteUpdated({ note: initialNote, error: true })
+        }
       }
     }
   }

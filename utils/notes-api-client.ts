@@ -35,7 +35,7 @@ export async function createNote(noteData: { note: string }) {
   return response.json()
 }
 
-export async function updateNote(id: string, noteData: { note: string }) {
+export async function updateNote(id: string, noteData: { note: string, version: number }) {
   const response = await fetch(`/api/notes/${id}`, {
     method: 'PATCH',
     headers: {
@@ -47,6 +47,12 @@ export async function updateNote(id: string, noteData: { note: string }) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     const errorMessage = errorData.error || 'Failed to update note. Please try again.';
+    
+    // Handle conflict specifically
+    if (response.status === 409 && errorData.conflict) {
+      throw new Error('CONFLICT: ' + errorMessage);
+    }
+    
     throw new Error(errorMessage);
   }
   

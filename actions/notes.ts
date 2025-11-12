@@ -10,6 +10,7 @@ interface Note {
   user_id: string;
   note: string;
   created_at: string;
+  version: number;
   user?: {
     email: string;
   };
