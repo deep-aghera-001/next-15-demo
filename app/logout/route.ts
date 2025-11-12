@@ -1,4 +1,4 @@
-import { logout } from './actions'
+import { logout } from '../../actions/logout'
 import { NextResponse } from 'next/server'
 
 export async function POST() {

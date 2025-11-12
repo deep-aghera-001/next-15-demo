@@ -1,15 +1,11 @@
-import { createClient } from '@/utils/supabase/server'
+import { getDashboardData } from '@/actions/auth'
 import UserProfileManager from '@/components/UserProfileManager'
 import ProtectedDataDisplay from '@/components/ProtectedDataDisplay'
+import UserNotesManager from '@/components/UserNotesManager'
+import LogoutButton from '@/components/LogoutButton'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.auth.getUser()
-  if (error || !data?.user) {
-    // This should never happen due to layout protection, but good to have as fallback
-    throw new Error('Unauthorized')
-  }
+  const { user } = await getDashboardData()
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -18,22 +14,16 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="mt-2 text-gray-600">Welcome, {data.user.email}!</p>
+              <p className="mt-2 text-gray-600">Welcome, {user.email}!</p>
             </div>
-            <form action="/logout" method="post">
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                Logout
-              </button>
-            </form>
+            <LogoutButton />
           </div>
         </div>
       </div>
       <div className="py-6">
         <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
           <div className="py-4 space-y-6">
+            <UserNotesManager />
             <UserProfileManager />
             <ProtectedDataDisplay />
           </div>

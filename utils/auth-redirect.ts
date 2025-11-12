@@ -1,13 +1,11 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
-export default async function ServerAuthRedirect({
-  children,
-  redirectTo = '/dashboard'
-}: {
-  children: React.ReactNode
-  redirectTo?: string
-}) {
+/**
+ * Redirects authenticated users to the specified path
+ * @param redirectTo - The path to redirect authenticated users to
+ */
+export async function redirectIfAuthenticated(redirectTo: string = '/dashboard') {
   const supabase = await createClient()
   
   const { data: { user }, error } = await supabase.auth.getUser()
@@ -15,6 +13,4 @@ export default async function ServerAuthRedirect({
   if (!error && user) {
     redirect(redirectTo)
   }
-  
-  return <>{children}</>
 }
