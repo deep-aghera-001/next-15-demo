@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     const userMap = new Map(users.users.map((user: User) => [user.id, user.email || 'Unknown Email']))
     
     // Add correct user information to each note
-    const notesWithUser: Note[] = notes.map((note: any) => ({
+    const notesWithUser: Note[] = (notes as Note[]).map(note => ({
       ...note,
       user: { email: userMap.get(note.user_id) || 'Unknown User' }
     }))
@@ -90,8 +90,8 @@ export async function GET(request: NextRequest) {
         hasPrevPage: page > 1
       }
     })
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -128,8 +128,8 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json(noteWithUser)
-  } catch (error: any) {
-    if (error.message === 'Unauthorized') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

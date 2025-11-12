@@ -36,9 +36,10 @@ export default function NoteForm({ onNoteAdded }: { onNoteAdded?: (newNote: Note
         onNoteAdded({ ...savedNote, tempId }) // Pass tempId to identify which note to replace
       }
       setNote('')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create note:', error)
-      setError(error.message || 'Failed to create note. Please try again.')
+      const message = error instanceof Error ? error.message : 'Failed to create note. Please try again.'
+      setError(message)
       // Notify parent to remove the optimistic note on error
       if (onNoteAdded) {
         onNoteAdded({ id: tempId, error: true } as Note)

@@ -7,7 +7,7 @@ interface User {
   id: string
   email: string
   created_at: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export default function UserProfileManager() {
