@@ -15,10 +15,9 @@ interface NotesListProps {
   notes?: Note[];
   onNoteDeleted?: () => void;
   onNoteUpdated?: () => void;
-  currentUserId?: string;
 }
 
-const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNotes, onNoteDeleted, onNoteUpdated, currentUserId }, ref) => {
+const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNotes, onNoteDeleted, onNoteUpdated }, ref) => {
   const [notes, setNotes] = useState<Note[]>(propNotes || [])
   const [loading, setLoading] = useState(!propNotes)
   const [pending, start] = useTransition()

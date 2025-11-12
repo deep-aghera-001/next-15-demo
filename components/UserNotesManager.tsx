@@ -1,16 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import NoteForm from '@/components/forms/NoteForm'
 import NotesList, { NotesListHandle } from '@/components/forms/NotesList'
 import { useNotes } from '@/hooks/useNotes'
 import { useRealtimeNotes } from '@/hooks/useRealtimeNotes'
-import { createClient } from '@/utils/supabase/client'
 import { Note } from '@/types/note'
 
 export default function UserNotesManager() {
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  
   // Use our custom hooks for data fetching and state management
   const {
     notes,
@@ -26,19 +23,6 @@ export default function UserNotesManager() {
   } = useNotes({ limit: 10 })
   
   const notesListRef = useRef<NotesListHandle>(null)
-  const supabase = createClient()
-
-  // Get current user on component mount
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setCurrentUserId(user.id)
-      }
-    }
-    
-    fetchUser()
-  }, [])
 
   // Set up real-time subscription using our custom hook
   useRealtimeNotes({
@@ -90,7 +74,6 @@ export default function UserNotesManager() {
             notes={notes} 
             onNoteDeleted={() => fetchNotes(pagination.currentPage, searchQuery)}
             onNoteUpdated={() => fetchNotes(pagination.currentPage, searchQuery)}
-            currentUserId={currentUserId || undefined}
           />
         )}
       </div>
