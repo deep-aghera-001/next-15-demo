@@ -6,19 +6,7 @@ import NotesList, { NotesListHandle } from '@/components/forms/NotesList'
 import { useNotes } from '@/hooks/useNotes'
 import { useRealtimeNotes } from '@/hooks/useRealtimeNotes'
 import { createClient } from '@/utils/supabase/client'
-
-// Define the Note type
-interface Note {
-  id: string | number;
-  note: string;
-  created_at: string;
-  user?: {
-    email: string;
-  };
-  tempId?: string;
-  error?: boolean;
-  [key: string]: any;
-}
+import { Note } from '@/types/note'
 
 export default function UserNotesManager() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -59,21 +47,6 @@ export default function UserNotesManager() {
     searchQuery
   })
 
-  const handleNoteAdded = (newNote: Note) => {
-    // Handle optimistic note using the hook function
-    addOptimisticNote(newNote)
-  }
-
-  const handleNoteUpdated = () => {
-    // Refresh the notes list
-    fetchNotes(pagination.currentPage, searchQuery)
-  }
-
-  const handleNoteDeleted = () => {
-    // Refresh the notes list
-    fetchNotes(pagination.currentPage, searchQuery)
-  }
-
   // Show loading only for initial load
   const showLoading = loading && notes.length === 0;
   
@@ -106,7 +79,7 @@ export default function UserNotesManager() {
         </div>
       )}
       
-      <NoteForm onNoteAdded={handleNoteAdded} />
+      <NoteForm onNoteAdded={addOptimisticNote} />
       
       <div className="mt-6">
         {showLoading ? (
@@ -115,8 +88,8 @@ export default function UserNotesManager() {
           <NotesList 
             ref={notesListRef}
             notes={notes} 
-            onNoteDeleted={handleNoteDeleted} 
-            onNoteUpdated={handleNoteUpdated}
+            onNoteDeleted={() => fetchNotes(pagination.currentPage, searchQuery)}
+            onNoteUpdated={() => fetchNotes(pagination.currentPage, searchQuery)}
             currentUserId={currentUserId || undefined}
           />
         )}

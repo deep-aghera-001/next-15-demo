@@ -5,21 +5,10 @@ import { useTransition, useOptimistic } from 'react'
 import { getNotes, deleteNote } from '@/utils/notes-api-client'
 import EditNoteForm from '@/components/forms/EditNoteForm'
 import NoteAccessManager from '@/components/forms/NoteAccessManager'
+import { Note } from '@/types/note'
 
 export interface NotesListHandle {
   refreshNotes: () => void;
-}
-
-interface Note {
-  id: string | number;
-  note: string;
-  created_at: string;
-  version?: number;
-  being_edited?: boolean;
-  user?: {
-    email: string;
-  };
-  [key: string]: any;
 }
 
 interface NotesListProps {

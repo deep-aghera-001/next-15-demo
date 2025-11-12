@@ -2,18 +2,7 @@
 
 import { useTransition, useState } from 'react'
 import { createNote } from '@/utils/notes-api-client'
-
-interface Note {
-  id: string | number;
-  note: string;
-  created_at: string;
-  user?: {
-    email: string;
-  };
-  tempId?: string;
-  error?: boolean;
-  [key: string]: any;
-}
+import { Note } from '@/types/note'
 
 export default function NoteForm({ onNoteAdded }: { onNoteAdded?: (newNote: Note) => void }) {
   const [pending, start] = useTransition()
