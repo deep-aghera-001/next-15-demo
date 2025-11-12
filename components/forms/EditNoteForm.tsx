@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useState, useEffect } from 'react'
+import { useTransition, useState, useEffect, useRef } from 'react'
 import { updateNote } from '@/utils/notes-api-client'
 import { toggleNoteEditingState } from '@/utils/toggle-editing-state'
 
@@ -21,6 +21,9 @@ export default function EditNoteForm({
   const [note, setNote] = useState(initialNote)
   const [error, setError] = useState<string | null>(null)
   const [version, setVersion] = useState(initialVersion)
+  const [editingStatePending, setEditingStatePending] = useState(false)
+  const editingStateRef = useRef(false)
+  const lastSentEditingState = useRef<boolean | null>(null)
 
   // Update local state when initialNote changes
   useEffect(() => {
@@ -30,11 +33,48 @@ export default function EditNoteForm({
 
   // Set editing state when component mounts
   useEffect(() => {
-    toggleNoteEditingState(noteId.toString(), true).catch(console.error)
+    const setEditingState = async () => {
+      if (lastSentEditingState.current !== true) {
+        setEditingStatePending(true)
+        try {
+          await toggleNoteEditingState(noteId.toString(), true)
+          lastSentEditingState.current = true
+          editingStateRef.current = true
+        } catch (err) {
+          console.error('Failed to set editing state:', err)
+        } finally {
+          setEditingStatePending(false)
+        }
+      }
+    }
+    
+    setEditingState()
     
     // Clear editing state when component unmounts
     return () => {
-      toggleNoteEditingState(noteId.toString(), false).catch(console.error)
+      const clearEditingState = async () => {
+        if (lastSentEditingState.current === true) {
+          try {
+            await toggleNoteEditingState(noteId.toString(), false)
+            lastSentEditingState.current = false
+            editingStateRef.current = false
+          } catch (err) {
+            console.error('Failed to clear editing state:', err)
+          }
+        }
+      }
+      
+      clearEditingState()
+    }
+  }, [noteId])
+
+  // Ensure editing state is cleared on unmount even if component unmounts quickly
+  useEffect(() => {
+    return () => {
+      if (editingStateRef.current && lastSentEditingState.current === true) {
+        // Fire and forget - no need to await
+        toggleNoteEditingState(noteId.toString(), false).catch(console.error)
+      }
     }
   }, [noteId])
 
@@ -105,10 +145,10 @@ export default function EditNoteForm({
         <button
           type="button"
           onClick={onCancel}
-          disabled={pending}
+          disabled={pending || editingStatePending}
           className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
         >
-          Cancel
+          {editingStatePending ? 'Updating...' : 'Cancel'}
         </button>
       </div>
     </form>
