@@ -1,19 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import UserNotesManager from '@/components/UserNotesManager'
 
-export default function TestOfflinePage() {
-  const [isOnline, setIsOnline] = useState(true)
+// Prevent static rendering during build
+export const dynamic = 'force-dynamic'
 
+export default function TestOfflinePage() {
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
+    const handleOnline = () => {}
+    const handleOffline = () => {}
 
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
-
-    setIsOnline(navigator.onLine)
 
     return () => {
       window.removeEventListener('online', handleOnline)

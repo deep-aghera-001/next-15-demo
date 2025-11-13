@@ -18,7 +18,7 @@ export default function EditNoteForm({
   onNoteUpdated: (updatedNote?: Partial<Note> & { conflict?: boolean }) => void; 
   onCancel: () => void 
 }) {
-  const [pending, start] = useTransition()
+  const [pending] = useTransition()
   const [note, setNote] = useState(initialNote)
   const [error, setError] = useState<string | null>(null)
   const [version, setVersion] = useState(initialVersion)

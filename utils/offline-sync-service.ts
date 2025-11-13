@@ -17,7 +17,7 @@ class OfflineSyncService {
 
   constructor() {
     // Check initial online status
-    this.updateOnlineStatus(navigator.onLine)
+    this.updateOnlineStatus(typeof navigator !== 'undefined' ? navigator.onLine : true)
     
     // Listen for online/offline events
     if (typeof window !== 'undefined') {

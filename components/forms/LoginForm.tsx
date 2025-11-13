@@ -5,10 +5,6 @@ import { login, signInWithGitHub, signInWithGoogle } from '../../actions/login'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
-type FormState = {
-  error?: string
-} | null
-
 export default function LoginForm() {
   const [state, formAction] = useActionState(login, null)
   const searchParams = useSearchParams()

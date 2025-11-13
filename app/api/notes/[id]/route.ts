@@ -19,7 +19,7 @@ export async function PATCH(
 ) {
   try {
     const resolvedParams = await params;
-    const { userId, userEmail } = await getUserIdAndEmail()
+    const { userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     
     const noteData = await request.json()
@@ -95,7 +95,7 @@ export async function DELETE(
 ) {
   try {
     const resolvedParams = await params;
-    const { userId, userEmail } = await getUserIdAndEmail()
+    const { userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     
     // Delete the note - database policies will enforce access control

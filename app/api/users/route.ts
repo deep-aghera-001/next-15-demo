@@ -2,7 +2,7 @@ import { createAdminClient } from '@/utils/supabase/server-admin'
 import { NextResponse } from 'next/server'
 
 // GET /api/users - Get all users (admin only)
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const supabase = createAdminClient()
     
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     }
     
     return NextResponse.json(users)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json(data.user)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

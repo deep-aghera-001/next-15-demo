@@ -2,7 +2,7 @@ import { createApiAuthClient } from '@/utils/supabase/api-auth'
 import { NextResponse } from 'next/server'
 
 // GET /api/protected - Example of a protected route
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const supabase = await createApiAuthClient()
     const { data: { session } } = await supabase.auth.getSession()
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       message: 'This is protected data',
       user: session.user
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

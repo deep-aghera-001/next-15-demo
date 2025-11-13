@@ -27,6 +27,7 @@ export default function NoteAccessManager({ noteId }: { noteId: number }) {
 
   useEffect(() => {
     fetchAccessUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noteId])
 
   const handleGrantAccess = async (e: React.FormEvent) => {

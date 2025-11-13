@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(true)
+  const [isOnline, setIsOnline] = useState(() => 
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  )
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true)
@@ -13,7 +15,7 @@ export function useOnlineStatus() {
     window.addEventListener('offline', handleOffline)
 
     // Check initial status
-    setIsOnline(navigator.onLine)
+    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true)
 
     return () => {
       window.removeEventListener('online', handleOnline)

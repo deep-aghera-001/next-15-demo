@@ -4,11 +4,6 @@ import { useActionState, useState } from 'react'
 import { signup, signUpWithGitHub, signUpWithGoogle } from '../../actions/signup'
 import Link from 'next/link'
 
-type FormState = {
-  error?: string
-  success?: boolean
-} | null
-
 export default function SignupForm() {
   const [state, formAction] = useActionState(signup, null)
   const [isGitHubLoading, setIsGitHubLoading] = useState(false)
