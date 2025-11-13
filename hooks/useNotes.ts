@@ -288,7 +288,7 @@ export function useNotes({
     loading,
     error,
     searchQuery,
-    isOnline: navigator.onLine,
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
     
     // Functions
     fetchNotes,

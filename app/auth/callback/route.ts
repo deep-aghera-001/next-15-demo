@@ -1,6 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -18,7 +17,6 @@ export async function GET(request: Request) {
 
   // Handle password reset flow
   if (type === 'recovery' && code) {
-    const cookieStore = await cookies()
     const supabase = await createClient()
     
     // Exchange the code for a session
@@ -41,7 +39,6 @@ export async function GET(request: Request) {
 
   // Handle regular OAuth flow
   if (code) {
-    const cookieStore = await cookies()
     const supabase = await createClient()
     
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)

@@ -29,7 +29,6 @@ async function getUserIdAndEmail() {
 // GET /api/notes - Get all notes with pagination and search
 export async function GET(request: NextRequest) {
   try {
-    const { userId, userEmail } = await getUserIdAndEmail()
     const supabase = await createClient()
     const adminSupabase = createAdminClient()
     

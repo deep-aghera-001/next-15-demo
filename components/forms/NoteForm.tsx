@@ -5,7 +5,7 @@ import { createNote } from '@/utils/notes-api-client'
 import { Note } from '@/types/note'
 
 export default function NoteForm({ onNoteAdded }: { onNoteAdded?: (newNote: Note) => void }) {
-  const [pending, start] = useTransition()
+  const [pending] = useTransition()
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
 

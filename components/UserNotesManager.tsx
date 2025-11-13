@@ -5,7 +5,6 @@ import NoteForm from '@/components/forms/NoteForm'
 import NotesList, { NotesListHandle } from '@/components/forms/NotesList'
 import { useNotes } from '@/hooks/useNotes'
 import { useRealtimeNotes } from '@/hooks/useRealtimeNotes'
-import { Note } from '@/types/note'
 
 export default function UserNotesManager() {
   // Use our custom hooks for data fetching and state management

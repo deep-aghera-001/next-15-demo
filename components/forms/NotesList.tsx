@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, forwardRef, useImperativeHandle, startTransition } from 'react'
-import { useTransition, useOptimistic } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { useTransition } from 'react'
 import { getNotes, deleteNote } from '@/utils/notes-api-client'
 import EditNoteForm from '@/components/forms/EditNoteForm'
 import NoteAccessManager from '@/components/forms/NoteAccessManager'
@@ -20,7 +20,7 @@ interface NotesListProps {
 const NotesList = forwardRef<NotesListHandle, NotesListProps>(({ notes: propNotes, onNoteDeleted, onNoteUpdated }, ref) => {
   const [notes, setNotes] = useState<Note[]>(propNotes || [])
   const [loading, setLoading] = useState(!propNotes)
-  const [pending, start] = useTransition()
+  useTransition()
   const [error, setError] = useState<string | null>(null)
   const [editingNoteId, setEditingNoteId] = useState<number | string | null>(null)
   const [sharingNoteId, setSharingNoteId] = useState<number | string | null>(null)

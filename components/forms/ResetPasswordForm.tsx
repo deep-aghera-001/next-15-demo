@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function ResetPasswordForm() {
@@ -9,7 +8,6 @@ export default function ResetPasswordForm() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +31,7 @@ export default function ResetPasswordForm() {
       } else {
         setError(data.error || 'Failed to send reset email.')
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
